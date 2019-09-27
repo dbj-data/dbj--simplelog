@@ -40,6 +40,7 @@ static struct {
   int level;
   int quiet;
   bool file_line_show;
+  char log_f_name[BUFSIZ] = {'\0'};
 } L;
 
 
@@ -85,8 +86,22 @@ void log_set_lock(log_lock_function_ptr fn) {
 }
 
 
-void log_set_fp(FILE *fp) {
+void log_set_fp(FILE *fp, const char * file_path_name ) {
   L.fp = fp;
+
+  if (!file_path_name) {
+	  /* name not given */
+	  L.log_f_name[0] = '\0';
+	  return;
+  }
+
+  /* char log_f_name[BUFSIZ] = { '\0' }; */
+  errno_t rez = strncpy_s(L.log_f_name, file_path_name, BUFSIZ - 1 );
+  assert(rez);
+}
+
+const char* const current_log_file_path() {
+	return L.log_f_name;
 }
 
 

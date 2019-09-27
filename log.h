@@ -16,6 +16,7 @@
 #include "dbj_file_handle.h"
 
 namespace dbj::simplelog {
+
 	extern "C" {
 
 #endif // __cplusplus
@@ -33,11 +34,16 @@ namespace dbj::simplelog {
 
 		void log_set_udata(void* udata);
 		void log_set_lock(log_lock_function_ptr fn);
-		void log_set_fp(FILE* fp);
+		/* dbj added the second argument, for file name/path */
+		void log_set_fp(FILE* fp, const char * );
 		void log_set_level(int level);
+		/* beware: if quiet and no file there is no logging at all */
 		void log_set_quiet(int enable);
 		/* 0 do not add file line to log lines stamp, 1 add */
 		void log_set_fileline( unsigned );
+		/**/
+		const char * const current_log_file_path();
+
 
 		void log_log(int level, const char* file, int line, const char* fmt, ...);
 
@@ -119,7 +125,8 @@ namespace dbj::simplelog {
 		MT = 1 , /* set to Multi Threaded */
 		VT100_CON = 2, /* specificaly switch on the VT100 console mode */
 		LOG_FROM_APP_PATH = 4, /* if app full path is given  use it to obtain log gile name*/
-		FILE_LINE_OFF = 8 /* do not show file line on every log line */
+		FILE_LINE_OFF = 8, /* do not show file line on every log line */
+		SILENT = 16 /* no console output, beware of no file and quiet */
 	} SETUP ;
 
 	/*
@@ -141,6 +148,15 @@ namespace dbj::simplelog {
 			log_set_lock(mt::protector_function);
 		}
 
+		if (( int(setup) & int(SETUP::SILENT) ) != 0) {
+			log_set_quiet(1);
+#ifdef _DEBUG
+			if (app_full_path == nullptr) {
+				perror(__FILE__ "\nWARNING: SILENT is set, but no log file is requested");
+			}
+#endif
+		}
+
 		// caller does not want any kind of local log file
 		if (app_full_path == nullptr) return true;
 
@@ -158,7 +174,7 @@ namespace dbj::simplelog {
 				return false;
 			}
 
-			log_set_fp(file_handle->file_ptr());
+			log_set_fp(file_handle->file_ptr(), log_file_name.c_str() );
 				return true;
 	}
 
