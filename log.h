@@ -1,3 +1,4 @@
+#pragma once
 /* (c) 2019 by dbj.org   -- CC BY-SA 4.0 -- https://creativecommons.org/licenses/by-sa/4.0/ */
 /**
  * Copyright (c) 2017 rxi
@@ -6,8 +7,8 @@
  * under the terms of the MIT license. See `log.c` for details.
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef _DBJ_LOG_H_INCLUDED_
+#define _DBJ_LOG_H_INCLUDED_
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -100,8 +101,8 @@ namespace dbj::simplelog {
 		}
 	} // mt
 
-		/*
-	in case you want a log file the smae full path as your app is
+	/*
+	in case you want a log file the same full path as your app is
 	BEWARE! be very carefull with relative file names!
 	*/
 	inline std::string app_to_log_file_name(
@@ -200,4 +201,4 @@ namespace dbj::simplelog {
 
 
 
-#endif
+#endif // _DBJ_LOG_H_INCLUDED_
