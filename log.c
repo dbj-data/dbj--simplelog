@@ -42,17 +42,18 @@ static struct {
   int quiet;
   bool file_line_show;
   char log_f_name[BUFSIZ];
-} L;
+} LOCAL = { 0, 0, 0, LOG_TRACE, 0, true, '\0'} ;
+
+const char* const current_log_file_path() {
+	return LOCAL.log_f_name;
+}
 
 static const char* set_log_file_name(const char new_name[BUFSIZ]) {
 
-	errno_t rez = strncpy_s(L.log_f_name, BUFSIZ, new_name, BUFSIZ - 1);
+	errno_t rez = strncpy_s(LOCAL.log_f_name, BUFSIZ, new_name, BUFSIZ - 1);
 	assert(rez);
-	return L.log_f_name;
+	return LOCAL.log_f_name;
 }
-/* set it to empty on start-up */
-static const char* empty_on_start = set_log_file_name("");
-
 
 static const char *level_names[] = {
   "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
@@ -66,57 +67,52 @@ static const char *level_colors[] = {
 
 
 static void lock(void)   {
-  if (L.lock) {
-    L.lock(L.udata, 1);
+  if (LOCAL.lock) {
+    LOCAL.lock(LOCAL.udata, 1);
   }
 }
 
 
 static void unlock(void) {
-  if (L.lock) {
-    L.lock(L.udata, 0);
+  if (LOCAL.lock) {
+    LOCAL.lock(LOCAL.udata, 0);
   }
 }
 
 void log_set_fileline(unsigned show) 
 {
 	if (0 == show) 
-		L.file_line_show = false ;
+		LOCAL.file_line_show = false ;
 	else
-		L.file_line_show = true ;
+		LOCAL.file_line_show = true ;
 }
 
 void log_set_udata(void *udata) {
-  L.udata = udata;
+  LOCAL.udata = udata;
 }
 
 void log_set_lock(log_lock_function_ptr fn) {
-  L.lock = fn;
+  LOCAL.lock = fn;
 }
 
 void log_set_fp(FILE *fp, const char * file_path_name ) {
-  L.fp = fp;
+  LOCAL.fp = fp;
 
   if (!file_path_name) {
 	  /* name not given */
-	  L.log_f_name[0] = '\0';
+	  LOCAL.log_f_name[0] = '\0';
 	  return;
   }
   set_log_file_name(file_path_name );
 }
 
-const char* const current_log_file_path() {
-	return L.log_f_name;
-}
-
-
 void log_set_level(int level) {
-  L.level = level;
+  LOCAL.level = level;
 }
 
 
 void log_set_quiet(int enable) {
-  L.quiet = enable ? 1 : 0;
+  LOCAL.quiet = enable ? 1 : 0;
 }
 
 
@@ -125,7 +121,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 	/* Acquire lock */
 	lock();
 	
-	if (level < L.level)   goto exit;
+	if (level < LOCAL.level)   goto exit;
 
   /* Get current time */
   time_t t = time(NULL);
@@ -133,13 +129,13 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 	errno_t errno_rez  = localtime_s(&lt, &t);
 
   /* Log to stderr */
-  if (!L.quiet) {
+  if (!LOCAL.quiet) {
     va_list args;
     char buf[16];
     buf[strftime(buf, sizeof(buf), "%H:%M:%S", &lt)] = '\0';
 #ifdef LOG_USE_COLOR
 
-	if (L.file_line_show) {
+	if (LOCAL.file_line_show) {
 		fprintf(
 			stderr, "%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
 			buf, level_colors[level], level_names[level], file, line);
@@ -150,7 +146,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 			buf, level_colors[level], level_names[level] );
 	}
 #else
-	if ( L.file_line_show)
+	if ( LOCAL.file_line_show)
     fprintf(stderr, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
 	else
 	fprintf(stderr, "%s %-5s ", buf, level_names[level]);
@@ -163,19 +159,19 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
   } // log not quiet
 
   /* Log to file */
-  if (L.fp) {
+  if (LOCAL.fp) {
     va_list args;
     char buf[32];
     buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", & lt)] = '\0';
-	if (L.file_line_show)
-    fprintf(L.fp, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
+	if (LOCAL.file_line_show)
+    fprintf(LOCAL.fp, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
 	else
-    fprintf(L.fp, "%s %-5s: ", buf, level_names[level]);
+    fprintf(LOCAL.fp, "%s %-5s: ", buf, level_names[level]);
     va_start(args, fmt);
-    vfprintf(L.fp, fmt, args);
+    vfprintf(LOCAL.fp, fmt, args);
     va_end(args);
-    fprintf(L.fp, "\n");
-    fflush(L.fp);
+    fprintf(LOCAL.fp, "\n");
+    fflush(LOCAL.fp);
   }
 
   exit :
