@@ -40,8 +40,18 @@ static struct {
   int level;
   int quiet;
   bool file_line_show;
-  char log_f_name[BUFSIZ] = {'\0'};
+  char log_f_name[BUFSIZ];
 } L;
+
+static const char* set_log_file_name(char new_name[BUFSIZ]) {
+
+	errno_t rez = strncpy_s(L.log_f_name, new_name, BUFSIZ - 1);
+	assert(rez);
+	return L.log_f_name;
+}
+
+/* set it to empty on start-up */
+static const char* empty_on_start = set_log_file_name("");
 
 
 static const char *level_names[] = {
@@ -85,6 +95,12 @@ void log_set_lock(log_lock_function_ptr fn) {
   L.lock = fn;
 }
 
+static const char* set_log_file_name( char new_name[BUFSIZ]) {
+
+	errno_t rez = strncpy_s(L.log_f_name, new_name, BUFSIZ - 1);
+	assert(rez);
+	return L.log_f_name;
+}
 
 void log_set_fp(FILE *fp, const char * file_path_name ) {
   L.fp = fp;
@@ -94,10 +110,7 @@ void log_set_fp(FILE *fp, const char * file_path_name ) {
 	  L.log_f_name[0] = '\0';
 	  return;
   }
-
-  /* char log_f_name[BUFSIZ] = { '\0' }; */
-  errno_t rez = strncpy_s(L.log_f_name, file_path_name, BUFSIZ - 1 );
-  assert(rez);
+  set_log_file_name(file_path_name );
 }
 
 const char* const current_log_file_path() {
