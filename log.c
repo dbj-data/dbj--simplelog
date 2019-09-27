@@ -167,7 +167,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
     va_end(args);
     fprintf(stderr, "\n");
     fflush(stderr);
-  }
+  } // log not quiet
 
   /* Log to file */
   if (L.fp) {
@@ -185,7 +185,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
     fflush(L.fp);
   }
 
-  exit :;
+  exit :
   /* Release lock */
   unlock();
 }

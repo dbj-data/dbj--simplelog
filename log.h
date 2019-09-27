@@ -13,6 +13,9 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define LOG_VERSION "0.5.0"
+#define LOG_USE_COLOR
+
 #ifdef __cplusplus
 #include "dbj_file_handle.h"
 
@@ -22,9 +25,8 @@ namespace dbj::simplelog {
 
 #endif // __cplusplus
 
-#define LOG_VERSION "0.5.0"
-#define LOG_USE_COLOR
-
+		// sometimes soon WIN10 will not need this
+		// as an explicit call
 		bool enable_vt_mode();
 
 		// bear in mind in C++ this type full name is
