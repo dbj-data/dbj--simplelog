@@ -52,7 +52,7 @@ const char* const current_log_file_path() {
 static const char* set_log_file_name(const char new_name[BUFSIZ]) {
 
 	errno_t rez = strncpy_s(LOCAL.log_f_name, BUFSIZ, new_name, BUFSIZ - 1);
-	assert(rez);
+	assert(rez == 0);
 	return LOCAL.log_f_name;
 }
 
