@@ -153,6 +153,10 @@ namespace dbj::simplelog {
 
 	inline bool setup(int setup = SETUP::VT100_CON, const char* app_full_path = nullptr) 
 	{
+		if (( int(setup) & int(SETUP::FILE_LINE_OFF)) != 0) {
+			log_set_fileline(0);
+		}
+
 		if (( int(setup) & int(SETUP::VT100_CON)) != 0) {
 			enable_vt_mode();
 		}
