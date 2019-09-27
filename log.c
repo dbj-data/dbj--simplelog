@@ -90,14 +90,13 @@ void log_set_udata(void *udata) {
   L.udata = udata;
 }
 
-
 void log_set_lock(log_lock_function_ptr fn) {
   L.lock = fn;
 }
 
 static const char* set_log_file_name( char new_name[BUFSIZ]) {
 
-	errno_t rez = strncpy_s(L.log_f_name, new_name, BUFSIZ - 1);
+	errno_t rez = strncpy_s(L.log_f_name, BUFSIZ, new_name, BUFSIZ - 1);
 	assert(rez);
 	return L.log_f_name;
 }
