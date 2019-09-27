@@ -44,13 +44,12 @@ static struct {
   char log_f_name[BUFSIZ];
 } L;
 
-static const char* set_log_file_name(char new_name[BUFSIZ]) {
+static const char* set_log_file_name(const char new_name[BUFSIZ]) {
 
 	errno_t rez = strncpy_s(L.log_f_name, BUFSIZ, new_name, BUFSIZ - 1);
 	assert(rez);
 	return L.log_f_name;
 }
-
 /* set it to empty on start-up */
 static const char* empty_on_start = set_log_file_name("");
 
@@ -93,13 +92,6 @@ void log_set_udata(void *udata) {
 
 void log_set_lock(log_lock_function_ptr fn) {
   L.lock = fn;
-}
-
-static const char* set_log_file_name( char new_name[BUFSIZ]) {
-
-	errno_t rez = strncpy_s(L.log_f_name, BUFSIZ, new_name, BUFSIZ - 1);
-	assert(rez);
-	return L.log_f_name;
 }
 
 void log_set_fp(FILE *fp, const char * file_path_name ) {
