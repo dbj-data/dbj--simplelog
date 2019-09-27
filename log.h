@@ -1,28 +1,39 @@
 #pragma once
+#ifndef _DBJ_SIMPLE_LOG_H_INCLUDED_
+#define _DBJ_SIMPLE_LOG_H_INCLUDED_
 /* (c) 2019 by dbj.org   -- CC BY-SA 4.0 -- https://creativecommons.org/licenses/by-sa/4.0/ */
-/**
+/*
  * Copyright (c) 2017 rxi
  *
- * This library is free software; you can redistribute it and/or modify it
- * under the terms of the MIT license. See `log.c` for details.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
  */
-
-#ifndef _DBJ_LOG_H_INCLUDED_
-#define _DBJ_LOG_H_INCLUDED_
 
 #include <stdio.h>
 #include <stdarg.h>
 
-#define LOG_VERSION "0.5.0"
 #define LOG_USE_COLOR
+#define DBJ_SIMPLE_LOG_VERSION "1.0.0"
 
 #ifdef __cplusplus
 #include "dbj_file_handle.h"
-
 namespace dbj::simplelog {
-
 	extern "C" {
-
 #endif // __cplusplus
 
 		// sometimes soon WIN10 will not need this
@@ -203,4 +214,4 @@ namespace dbj::simplelog {
 
 
 
-#endif // _DBJ_LOG_H_INCLUDED_
+#endif // _DBJ_SIMPLE_LOG_H_INCLUDED_
