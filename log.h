@@ -2,27 +2,6 @@
 #ifndef _DBJ_SIMPLE_LOG_H_INCLUDED_
 #define _DBJ_SIMPLE_LOG_H_INCLUDED_
 /* (c) 2019 by dbj.org   -- CC BY-SA 4.0 -- https://creativecommons.org/licenses/by-sa/4.0/ */
-/*
- * Copyright (c) 2017 rxi
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- */
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -66,6 +45,9 @@ namespace dbj::simplelog {
 } // namespace dbj::simplelog 
 #endif // __cplusplus
 
+/*
+resilience in presence of multiple threads
+*/
 #ifdef __cplusplus
 #include <mutex>
 
@@ -185,14 +167,18 @@ namespace dbj::simplelog {
 		else {
 			log_file_name = app_full_path;
 		}
-			auto [file_handle, status] = dbj::simplelog::FH::assure(log_file_name);
 
-			if (!file_handle) {
-				perror(status->data());
+		errno_t status{}; // 0
+		auto file_handle = dbj::simplelog::FH( status, log_file_name.c_str() );
+
+			_ASSERTE( status == 0 );
+
+			if ( status != 0 ) {
+				perror( "dbj::simplelog::FH constructor failed"  );
 				return false;
 			}
 
-			log_set_fp(file_handle->file_ptr(), log_file_name.c_str() );
+			log_set_fp(file_handle.file_ptr(), file_handle.name() );
 				return true;
 	}
 
