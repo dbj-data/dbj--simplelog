@@ -1,13 +1,17 @@
 #pragma once
 #ifndef _DBJ_SIMPLE_LOG_H_INCLUDED_
 #define _DBJ_SIMPLE_LOG_H_INCLUDED_
-/* (c) 2019 by dbj.org   -- CC BY-SA 4.0 -- https://creativecommons.org/licenses/by-sa/4.0/ */
+
+/* (c) 2019/2020 by dbj.org   -- CC BY-SA 4.0 -- https://creativecommons.org/licenses/by-sa/4.0/ */
 
 #include <stdio.h>
 #include <stdarg.h>
 
 #define LOG_USE_COLOR
-#define DBJ_SIMPLE_LOG_VERSION "1.0.0"
+#define DBJ_SIMPLE_LOG_MAJOR 2
+#define DBJ_SIMPLE_LOG_MINOR 0
+#define DBJ_SIMPLE_LOG_PATCH 0
+#define DBJ_SIMPLE_LOG_VERSION "2.0.0"
 
 #ifdef __cplusplus
 #include "dbj_file_handle.h"
@@ -200,8 +204,32 @@ namespace dbj::simplelog {
 #define log_warn(...)  dbj::simplelog::log_log(dbj::simplelog::LOG_WARN,  __FILE__, __LINE__, __VA_ARGS__)
 #define log_error(...) dbj::simplelog::log_log(dbj::simplelog::LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define log_fatal(...) dbj::simplelog::log_log(dbj::simplelog::LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
+
+inline int dbj_simple_log_startup(const char* app_full_path)
+{
+	using dbj::simplelog::SETUP;
+	if (!dbj::simplelog::setup(
+		SETUP::LOG_FROM_APP_PATH | SETUP::VT100_CON | SETUP::FILE_LINE_OFF /*| SETUP::SILENT*/,
+		app_full_path)
+		)
+		return EXIT_FAILURE;
+
+	log_trace(" %s", "=================================================================================");
+	log_trace(" Starting Application: %s", app_full_path);
+	log_trace(" Log file: %s", dbj::simplelog::current_log_file_path());
+	log_trace(" %s", "=================================================================================");
+
+#ifdef LOG_TESTING
+	log_trace("Log  TRACE");
+	log_debug("Log  DEBUG");
+	log_info("Log  INFO");
+	log_warn("Log  WARN");
+	log_error("Log  ERROR");
+	log_fatal("Log  FATAL");
+#endif
+	return EXIT_SUCCESS;
+}
+
 #endif // !__cplusplus
-
-
 
 #endif // _DBJ_SIMPLE_LOG_H_INCLUDED_
