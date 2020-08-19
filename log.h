@@ -109,8 +109,9 @@
 		/*
 	ATTENTION! file_handle.file_ptr() returns FILE * which is not explicitly closed by this lib
 	it is left to the OS to take care of it?.
+	fdopen mode is "wc"
 	*/
-	dbj_fhandle_file_ptr( &log_fh, "w") , log_fh.name 
+	dbj_fhandle_file_ptr( &log_fh ) , log_fh.name 
 	);
 				return true;
 	} // dbj_log_setup

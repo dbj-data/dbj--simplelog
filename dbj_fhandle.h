@@ -48,12 +48,16 @@ ENOENT	File or path not found.
 ENODEV	No such device
 */
 	errno_t  dbj_fhandle_assure(dbj_fhandle* self);
+
+	errno_t  dbj_fhandle_commit(dbj_fhandle* self);
 /*
 
 dbj_fhandle_assure must be called before this to assure the file handle from name given
 
+file is opened in "wc" mode , see here
+https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fdopen-wfdopen?view=vs-2019
 */
-	FILE* dbj_fhandle_file_ptr(dbj_fhandle* self, const char* options_ /*= "w"*/);
+	FILE* dbj_fhandle_file_ptr(dbj_fhandle* self );
 
 /*
 must not call dbj_fhandle_file_ptr if result of dbj_fhandle_log_file_ptr() != NULL

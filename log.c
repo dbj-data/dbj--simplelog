@@ -173,7 +173,15 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
     va_start(args, fmt);
     vfprintf(LOCAL.fp, fmt, args);
     va_end(args);
-    fprintf(LOCAL.fp, "\n");
+	fprintf(LOCAL.fp, "\n");
+
+#ifdef _DEBUG
+	int errcode = ferror(LOCAL.fp);
+	if (errcode != 0) {
+		perror("\n\nferror(LOCAL.fp);\n\n");
+		clearerr_s(LOCAL.fp);
+	}
+#endif
     // fflush(LOCAL.fp);
   }
 
