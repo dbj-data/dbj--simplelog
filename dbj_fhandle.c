@@ -42,30 +42,36 @@ ENODEV	No such device
 errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 {
 	assert(self);
-	const char* fn = self->name;
-	assert(fn);
+	assert(self->name);
 
-	int fd = self->file_descriptor;
+	// int fd = self->file_descriptor;
 
-	errno_t rez = _sopen_s(&fd, fn, O_WRONLY | O_APPEND | O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+	errno_t rez = _sopen_s(&self->file_descriptor, self->name, O_WRONLY | O_APPEND | O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE);
 
 	if (rez != 0) {
+		DBJ_PERROR;
 		self->file_descriptor = dbj_fhandle_bad_descriptor;
 		return rez;
 	}
 
 	struct stat sb;
-	fstat(fd, &sb);
+	rez = _fstat(self->file_descriptor, &sb);
+	if (rez != 0) {
+		DBJ_PERROR;
+		self->file_descriptor = dbj_fhandle_bad_descriptor;
+		return rez;
+	}
 
 	switch (sb.st_mode & S_IFMT) {
-	case S_IFCHR:  //printf("character device\n");        break;
+	case S_IFCHR:  //character device
 #ifndef _MSC_VER
-	case S_IFIFO:  //printf("FIFO/pipe\n");               break;
-	case S_IFLNK:  //printf("symlink\n");                 break;
+	case S_IFIFO:  //FIFO/pipe
+	case S_IFLNK:  //symlink
 #endif // !_MSC_VER
-	case S_IFREG:  //printf("regular file\n");            break;
+	case S_IFREG:  //regular file
 		break;
 	default:
+		assert( false );
 		return ENODEV;
 		break;
 	}
@@ -82,6 +88,7 @@ FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_)
 		assert(single_fp_ == NULL);
 		single_fp_ = next_fp_;
 	}
+
 	return single_fp_;
 }
 /*
@@ -110,7 +117,7 @@ FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */ )
 		_fdopen(self->file_descriptor, options_)
 	);
 	assert(fp_ != NULL);
-	assert(0 == ferror(fp_));
+	DBJ_FERROR(fp_);
 	return fp_;
 }
 

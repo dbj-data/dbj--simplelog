@@ -10,6 +10,27 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
+
+#undef  DBJ_PERROR 
+#ifdef _DEBUG
+#define DBJ_PERROR (perror(__FILE__ " # " _CRT_STRINGIZE(__LINE__))) 
+#else
+#define DBJ_PERROR
+#endif // _DEBUG
+
+#undef DBJ_FERROR
+#ifdef _DEBUG
+#define DBJ_FERROR( FP_) \
+do { \
+if (ferror(FP_) != 0) {\
+	DBJ_PERROR ;\
+	clearerr_s(FP_);\
+} \
+} while(0)
+#else
+#define DBJ_FERROR( FP_ )
+#endif // _DEBUG
 
 #define DBJ_FHANDLE_SUFFIX "log"
 
