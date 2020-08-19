@@ -4,124 +4,53 @@
 
 /* (c) 2019/2020 by dbj.org   -- CC BY-SA 4.0 -- https://creativecommons.org/licenses/by-sa/4.0/ */
 
+#include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 
-#define LOG_USE_COLOR
+#define DBJ_LOG_USE_COLOR
 #define DBJ_SIMPLE_LOG_MAJOR 2
 #define DBJ_SIMPLE_LOG_MINOR 0
 #define DBJ_SIMPLE_LOG_PATCH 0
 #define DBJ_SIMPLE_LOG_VERSION "2.0.0"
 
+#include "dbj_fhandle.h"
+
 #ifdef __cplusplus
-#include "dbj_file_handle.h"
-namespace dbj::simplelog {
 	extern "C" {
 #endif // __cplusplus
 
-		// sometimes soon WIN10 will not need this
+		// someday soon WIN10 will not need this
 		// as an explicit call
 		bool enable_vt_mode();
 
-		// bear in mind in C++ this type full name is
 		// dbj::simplelog::log_lock_function_ptr 
-		typedef void (*log_lock_function_ptr)(void* udata, int lock);
+		// udata is user data pointer
+		// lock == true  -- lock
+		// lock == false -- unlock
+		typedef void (*log_lock_function_ptr)(void* /*udata*/, bool /*lock*/);
+
+		// uses win32 critial section
+		void  default_protector_function(void* udata, bool lock);
 
 		enum { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
 
-		void log_set_udata(void* udata);
-		void log_set_lock(log_lock_function_ptr fn);
+		void log_set_udata(void* );
+		void log_set_lock(log_lock_function_ptr );
 		/* dbj added the second argument, for file name/path */
-		void log_set_fp(FILE* fp, const char * );
-		void log_set_level(int level);
+		void log_set_fp(FILE* , const char * );
+		void log_set_level(int );
 		/* beware: if quiet and no file there is no logging at all */
-		void log_set_quiet(int enable);
+		void log_set_quiet(bool );
 		/* 0 do not add file line to log lines stamp, 1 add */
-		void log_set_fileline( unsigned );
+		void log_set_fileline( bool  );
 		/**/
 		const char * const current_log_file_path();
 
+		void log_log(int /*level*/, const char* /*file*/, int /*line*/, const char* /*fmt*/, ...);
 
-		void log_log(int level, const char* file, int line, const char* fmt, ...);
-
-#ifdef __cplusplus
-	} // extern "C" 
-} // namespace dbj::simplelog 
-#endif // __cplusplus
-
-/*
-resilience in presence of multiple threads
-*/
-#ifdef __cplusplus
-#include <mutex>
-
-namespace dbj::simplelog {
-	namespace mt {
-		/*
-		C++ MT usage
-	   */
-		struct log_protector final
-		{
-			//  process wide mutex instance
-			inline static std::mutex log_protector_mutex{};
-			// one per instance
-			// try to guard the proc wide mutex as soon as constructed
-			log_protector() {
-				log_protector_mutex.lock();
-			}
-
-			~log_protector() {
-				// once per instance
-				// release the guard on the proc wide mutex instance
-				log_protector_mutex.unlock();
-			}
-		};
-
-		// scafolding for MT resilience 
-		// the logic here is imposed by simple protector implementation
-		inline log_protector* global_log_protector_ptr = nullptr;
-
-		// typedef void (*log_lock_function_ptr)(void* udata, int lock);
-		extern "C" inline void  protector_function(void* udata, int lock)
-		{
-			log_protector* log_protector_ptr = (log_protector*)udata;
-
-			if (lock)
-			{
-				_ASSERTE(global_log_protector_ptr == nullptr);
-				global_log_protector_ptr = new log_protector{};
-			}
-			else {
-				// unlock
-				_ASSERTE(global_log_protector_ptr != nullptr);
-				delete global_log_protector_ptr;
-				global_log_protector_ptr = nullptr;
-			}
-		}
-	} // mt
-
-	/*
-	in case you want a log file the same full path as your app is
-	BEWARE! be very carefull with relative file names!
-	*/
-	inline std::string app_to_log_file_name(
-		std::string_view full_exe_path,
-		char const* const suffix = ".log"
-	)
-	{
-#ifdef _MSC_VER
-		constexpr auto  DBJ_PATH_DELIM = '\\';
-#else
-		constexpr auto  DBJ_PATH_DELIM = '/';
-#endif
-		//auto pos_ = full_exe_path.find_last_of(DBJ_PATH_DELIM);
-		//if (pos_ == full_exe_path.npos) return {};
-		//auto basename = full_exe_path.substr(pos_);
-		//return std::string{"."}.append( basename.data() ).append(suffix);
-		return std::string{ full_exe_path.data() }.append(suffix);
-	}
-
-	 typedef enum  {
+	 typedef enum  SETUP {
 		MT = 1 , /* set to Multi Threaded */
 		VT100_CON = 2, /* specificaly switch on the VT100 console mode */
 		LOG_FROM_APP_PATH = 4, /* if app full path is given  use it to obtain log gile name*/
@@ -129,6 +58,8 @@ namespace dbj::simplelog {
 		SILENT = 16 /* no console output, beware of no file and quiet */
 	} SETUP ;
 
+#undef  DBJ_LOG_IS_SETUP
+#define DBJ_LOG_IS_SETUP(S_, B_) (((int)S_ & (int)B_) != 0)
 	/*
 	 ---------------------------------------------------------------------------------------------------------
 	usage
@@ -137,89 +68,78 @@ namespace dbj::simplelog {
 	   }
 	*/
 
-	inline bool setup(int setup = SETUP::VT100_CON, const char* app_full_path = nullptr) 
+	inline bool dbj_log_setup
+	(int setup /*= SETUP::VT100_CON */, const char* app_full_path /* = nullptr */
+	) 
 	{
-		if (( int(setup) & int(SETUP::FILE_LINE_OFF)) != 0) {
-			log_set_fileline(0);
+		if ( DBJ_LOG_IS_SETUP( setup, FILE_LINE_OFF) ) {
+			log_set_fileline(false);
+		}
+		else 
+			log_set_fileline(false);
+
+		if (DBJ_LOG_IS_SETUP(setup, VT100_CON)) {
+				enable_vt_mode();
 		}
 
-		if (( int(setup) & int(SETUP::VT100_CON)) != 0) {
-			enable_vt_mode();
+		if (DBJ_LOG_IS_SETUP(setup, MT)) {
+			log_set_lock( default_protector_function );
 		}
 
-		if (( int(setup) & int(SETUP::MT) ) != 0) {
-			log_set_udata(mt::global_log_protector_ptr);
-			log_set_lock(mt::protector_function);
-		}
-
-		if (( int(setup) & int(SETUP::SILENT) ) != 0) {
-			log_set_quiet(1);
+		if (DBJ_LOG_IS_SETUP(setup, SILENT)) {
+				log_set_quiet( true );
 #ifdef _DEBUG
-			if (app_full_path == nullptr) {
+			if (app_full_path == NULL ) {
 				perror(__FILE__ "\nWARNING: SILENT is set, but no log file is requested");
 			}
 #endif
-		}
+		} else 
+			log_set_quiet(false);
 
 		// caller does not want any kind of local log file
-		if (app_full_path == nullptr) return true;
+		if (app_full_path == NULL) return true;
 
-		string log_file_name {};
-		if ((int(setup) & int(SETUP::LOG_FROM_APP_PATH)) != 0) {
-			log_file_name = dbj::simplelog::app_to_log_file_name(app_full_path);
-		}
-		else {
-			log_file_name = app_full_path;
-		}
+	dbj_fhandle log_fh = dbj_fhandle_make(app_full_path);
 
-		errno_t status{}; // 0
-		auto file_handle = dbj::simplelog::FH( status, log_file_name.c_str() );
+	errno_t status = dbj_fhandle_assure( &log_fh );
 
-			_ASSERTE( status == 0 );
+	assert(status == 0);
 
-			if ( status != 0 ) {
-				perror( "dbj::simplelog::FH constructor failed"  );
-				return false;
-			}
-
-			log_set_fp(file_handle.file_ptr(), file_handle.name() );
+	log_set_fp(
+		/*
+	ATTENTION! file_handle.file_ptr() returns FILE * which is not explicitly closed by this lib
+	it is left to the OS to take care of it?.
+	*/
+	dbj_fhandle_file_ptr( &log_fh, "w") , log_fh.name 
+	);
 				return true;
-	}
+	} // dbj_log_setup
 
-} // namespace dbj::simplelog;
+#undef DBJ_LOG_IS_SETUP
 
-#endif //  __cplusplus
-
-#ifndef __cplusplus
 #define log_trace(...) log_log(LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
 #define log_debug(...) log_log(LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
 #define log_info(...)  log_log(LOG_INFO,  __FILE__, __LINE__, __VA_ARGS__)
 #define log_warn(...)  log_log(LOG_WARN,  __FILE__, __LINE__, __VA_ARGS__)
 #define log_error(...) log_log(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define log_fatal(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
-#else
-#define log_trace(...) dbj::simplelog::log_log(dbj::simplelog::LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
-#define log_debug(...) dbj::simplelog::log_log(dbj::simplelog::LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
-#define log_info(...)  dbj::simplelog::log_log(dbj::simplelog::LOG_INFO,  __FILE__, __LINE__, __VA_ARGS__)
-#define log_warn(...)  dbj::simplelog::log_log(dbj::simplelog::LOG_WARN,  __FILE__, __LINE__, __VA_ARGS__)
-#define log_error(...) dbj::simplelog::log_log(dbj::simplelog::LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
-#define log_fatal(...) dbj::simplelog::log_log(dbj::simplelog::LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
+
+/////////////////////////////////////////////////////////////////////////////////////
 
 inline int dbj_simple_log_startup(const char* app_full_path)
 {
-	using dbj::simplelog::SETUP;
-	if (!dbj::simplelog::setup(
-		SETUP::LOG_FROM_APP_PATH | SETUP::VT100_CON | SETUP::FILE_LINE_OFF /*| SETUP::SILENT*/,
-		app_full_path)
+	assert( app_full_path );
+
+	if (! dbj_log_setup ( LOG_FROM_APP_PATH | VT100_CON | FILE_LINE_OFF | MT | SILENT , app_full_path)
 		)
 		return EXIT_FAILURE;
 
-	log_trace(" %s", "=================================================================================");
-	log_trace(" Starting Application: %s", app_full_path);
-	log_trace(" Log file: %s", dbj::simplelog::current_log_file_path());
-	log_trace(" %s", "=================================================================================");
+	log_trace(" %s", "--------------------------------------------------------------");
+	log_trace(" Application: %s", app_full_path);
+	log_trace(" Log file: %s", current_log_file_path());
+	log_trace(" %s", "                                                              ");
 
-#ifdef LOG_TESTING
+#ifdef DBJ_LOG_TESTING
 	log_trace("Log  TRACE");
 	log_debug("Log  DEBUG");
 	log_info("Log  INFO");
@@ -230,6 +150,8 @@ inline int dbj_simple_log_startup(const char* app_full_path)
 	return EXIT_SUCCESS;
 }
 
-#endif // !__cplusplus
+#ifdef __cplusplus
+	} // extern "C" 
+#endif // __cplusplus
 
 #endif // _DBJ_SIMPLE_LOG_H_INCLUDED_

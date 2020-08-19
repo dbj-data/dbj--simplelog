@@ -60,7 +60,7 @@ static const char *level_names[] = {
   "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
 };
 
-#ifdef LOG_USE_COLOR
+#ifdef DBJ_LOG_USE_COLOR
 static const char *level_colors[] = {
   "\x1b[94m", "\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m", "\x1b[35m"
 };
@@ -80,12 +80,9 @@ static void unlock(void) {
   }
 }
 
-void log_set_fileline(unsigned show) 
+void log_set_fileline(bool show) 
 {
-	if (0 == show) 
-		LOCAL.file_line_show = false ;
-	else
-		LOCAL.file_line_show = true ;
+LOCAL.file_line_show = show;
 }
 
 void log_set_udata(void *udata) {
@@ -97,6 +94,8 @@ void log_set_lock(log_lock_function_ptr fn) {
 }
 
 void log_set_fp(FILE *fp, const char * file_path_name ) {
+
+	assert( fp );
   LOCAL.fp = fp;
 
   if (!file_path_name) {
@@ -111,9 +110,10 @@ void log_set_level(int level) {
   LOCAL.level = level;
 }
 
-
-void log_set_quiet(int enable) {
-  LOCAL.quiet = enable ? 1 : 0;
+// true for quiet enabled 
+// in other words -- silent
+void log_set_quiet(bool enable) {
+	LOCAL.quiet = enable;
 }
 
 
@@ -129,12 +129,13 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
   struct tm lt;
 	errno_t errno_rez  = localtime_s(&lt, &t);
 
-  /* Log to stderr */
+  /* Log to console using stderr */
   if (!LOCAL.quiet) {
     va_list args;
     char buf[16];
     buf[strftime(buf, sizeof(buf), "%H:%M:%S", &lt)] = '\0';
-#ifdef LOG_USE_COLOR
+
+#ifdef DBJ_LOG_USE_COLOR
 
 	if (LOCAL.file_line_show) {
 		fprintf(
@@ -152,11 +153,12 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 	else
 	fprintf(stderr, "%s %-5s ", buf, level_names[level]);
 #endif
+
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
     fprintf(stderr, "\n");
-    fflush(stderr);
+    // fflush(stderr);
   } // log not quiet
 
   /* Log to file */
@@ -172,7 +174,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
     vfprintf(LOCAL.fp, fmt, args);
     va_end(args);
     fprintf(LOCAL.fp, "\n");
-    fflush(LOCAL.fp);
+    // fflush(LOCAL.fp);
   }
 
   exit :
@@ -208,3 +210,22 @@ bool enable_vt_mode()
 		}
 		return true;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// typedef void (*log_lock_function_ptr)(void* udata, int lock);
+
+void  default_protector_function(void* udata, bool lock)
+{
+	static CRITICAL_SECTION   CS_ ;
+
+	if (lock)
+	{
+		InitializeCriticalSection(&CS_);
+		EnterCriticalSection(&CS_);
+	}
+	else {
+		LeaveCriticalSection(&CS_);
+		DeleteCriticalSection(&CS_);
+	}
+}
+////////////////////////////////////////////////////////////////////////////////
