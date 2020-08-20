@@ -106,14 +106,16 @@ NOTE: After _fdopen, close by using fclose, not _close.
 if (fp_) { ::fclose( fp_) ; fp_ = nullptr; }
 */
 
+
+
+FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */ )
+{
 // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fdopen-wfdopen?view=vs-2019
 // "c" is important
 // c --	Enable the commit flag for the associated filename so that the contents of the file
 //  buffer are written directly to disk if either fflush or _flushall is called.
-static const char* default_open_mode = "wc";
+	static const char* default_open_mode = "wc";
 
-FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */ )
-{
 	const char* options_ = default_open_mode;
 	assert(options_);
 	assert(self->file_descriptor > dbj_fhandle_bad_descriptor);

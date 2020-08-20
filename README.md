@@ -1,26 +1,45 @@
 # dbj--simplelog
 ### simple resilient fast local log
 
-By default all the log goes to 
-the `stderr`. Local file is not used and there is no resilience in presence of threads.
+> (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ 
 
-On startup one can use the setup function.
+Double personality logging. By default all the log goes to 
+the console through `stderr`. And to local file named equal to full application path + ".log".
+Also there is resilience in presence of threads "built in".
+
+> Important: log file is reset on each application run. That is the current policy.
+
+## How to use
+
+On startup one can use the setup function `dbj_log_setup`. But we recommend to use the `dbj_simple_log_startup(const char* app_full_path)` 
+immediately after main() starts.
 
 ```cpp
-int main(int argc, const char* argv[], char* envp)
+int main( const int argc, char * argv[] )
 {
-using dbj::simplelog::SETUP;
-if (!dbj::simplelog::setup(
-	SETUP::LOG_FROM_APP_PATH | SETUP::VT100_CON | SETUP::FILE_LINE_OFF ,
-	argv[0])
-)
- return EXIT_FAILURE;
+    if (EXIT_SUCCESS != dbj_simple_log_startup(argv[0]))
+        return EXIT_FAILURE;
 
-log_trace(" Starting Application: %s", argv[0]);
-log_trace(" Local log file: %s", dbj::simplelog::current_log_file_path());
+// log file is named equal to argv[0] + ".log".
+    const char * lfp = current_log_file_path();
+
+ ... the rest of the main ...
 
 ```
-Setup options
+### How to end properly
+
+This is a Windows lib. And Windows is notorious for being very reluctant to flush. Thus plese make sure at application end
+you place this snippet, somewhere clever as you do:
+
+```cpp
+        FILE* fp_ = dbj_fhandle_log_file_ptr(NULL);
+        assert(fp_);
+        (void)_flushall();
+         // make sure it is fclose, not close
+        if (fp_) { fclose(fp_); fp_ = nullptr; }
+```
+
+## Setup options
 
 | Setup tag  | the effect  |
 |---|---|
@@ -33,15 +52,12 @@ SILENT | No console output. Beware, if this is set and no file path is given you
 
 ---
 
-Tested on Windows 10. Using C++17 and C. 
+Built with CL.exe, which means C99 but somewhat undocumented. Roadmap is to switch to clang 10.x and use C11 goodies.
 
-Depends on [dbj--nanolib](https://github.com/dbj-systems/dbj--nanolib)
-
-How to use: add as a git submodule. Include it's only C file in your project. Use.
+How to use: best add it as a git submodule. Include `dbj_simple_log.h` 
+Include it's only C file  `dbj_simple_log.c` in your project. Use.
 
 -------
-
-(c) 2019 by dbj.org   -- CC BY-SA 4.0 -- https://creativecommons.org/licenses/by-sa/4.0/ 
 
 Based on `logc` lib by `rxi`. See the sub folder `logc`.
 
