@@ -46,7 +46,12 @@ errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 
 	// int fd = self->file_descriptor;
 
-	errno_t rez = _sopen_s(&self->file_descriptor, self->name, O_WRONLY | O_APPEND | O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+	errno_t rez = _sopen_s(&self->file_descriptor, self->name, 
+		_O_TRUNC | O_CREAT | _O_WRONLY,
+		/* sharing settings    */
+		_SH_DENYNO, 
+		/* permission settings */
+		_S_IWRITE);
 
 	if (rez != 0) {
 		DBJ_PERROR;
@@ -102,7 +107,7 @@ if (fp_) { ::fclose( fp_) ; fp_ = nullptr; }
 */
 
 // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fdopen-wfdopen?view=vs-2019
-// c is important
+// "c" is important
 // c --	Enable the commit flag for the associated filename so that the contents of the file
 //  buffer are written directly to disk if either fflush or _flushall is called.
 static const char* default_open_mode = "wc";
