@@ -6,6 +6,8 @@
 #define _POSIX_C_SOURCE 200809L
 #endif
 
+
+#include "dbj_fhandle.h"
 #include "dbj_simple_log.h"
 
 /*
@@ -42,6 +44,44 @@
 typedef int errno_t;
 #endif
 
+/*
+currently not public API
+making it so is of a questionable value as it inevitably 
+will complicate the public API
+*/
+
+// someday soon WIN10 will not need this
+// as an explicit call
+bool enable_vt_mode();
+
+// dbj::simplelog::log_lock_function_ptr 
+// udata is user data pointer
+// lock == true  -- lock
+// lock == false -- unlock
+typedef void (*log_lock_function_ptr)(void* /*udata*/, bool /*lock*/);
+
+// default uses win32 critial section
+// implemented in here
+// udata is unused 
+void  default_protector_function(void* /*udata*/, bool /*lock*/);
+
+// works but currently unused
+// primary use is to keep mutex or whatever else 
+// to be used by user locking function
+void log_set_udata(void*);
+// user locking function is set here
+// has to match log_lock_function_ptr signatured, and logic
+void log_set_lock(log_lock_function_ptr);
+
+void log_set_level(int);
+
+/* dbj added the second argument, for full file path */
+void log_set_fp(FILE*, const char*);
+
+/* beware: if quiet and no file there is no logging at all */
+void log_set_quiet(bool);
+/* do not add file + line to log lines stamp, or add */
+void log_set_fileline(bool);
 
 static struct {
   void *udata;
@@ -88,20 +128,20 @@ static void unlock(void) {
   }
 }
 
-void log_set_fileline(bool show) 
+static void log_set_fileline(bool show) 
 {
 LOCAL.file_line_show = show;
 }
 
-void log_set_udata(void *udata) {
+static void log_set_udata(void *udata) {
   LOCAL.udata = udata;
 }
 
-void log_set_lock(log_lock_function_ptr fn) {
+static void log_set_lock(log_lock_function_ptr fn) {
   LOCAL.lock = fn;
 }
 
-void log_set_fp(FILE *fp, const char * file_path_name ) {
+static void log_set_fp(FILE *fp, const char * file_path_name ) {
 
 	assert( fp );
   LOCAL.fp = fp;
@@ -114,13 +154,11 @@ void log_set_fp(FILE *fp, const char * file_path_name ) {
   set_log_file_name(file_path_name );
 }
 
-void log_set_level(int level) {
-  LOCAL.level = level;
-}
+// not used currently --> void log_set_level(int level) {  LOCAL.level = level; }
 
 // true for quiet enabled 
 // in other words -- silent
-void log_set_quiet(bool enable) {
+static void log_set_quiet(bool enable) {
 	LOCAL.quiet = enable;
 }
 
@@ -130,7 +168,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 	/* Acquire lock */
 	lock();
 	
-	if (level < LOCAL.level)   goto exit;
+	// not used currently --> 	if (level < LOCAL.level)   goto exit;
 
   /* Get current time */
   time_t t = time(NULL);
@@ -183,17 +221,10 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
     va_end(args);
 	fprintf(LOCAL.fp, "\n");
 
-#ifdef _DEBUG
-	int errcode = ferror(LOCAL.fp);
-	if (errcode != 0) {
-		perror("\n\nferror(LOCAL.fp);\n\n");
-		clearerr_s(LOCAL.fp);
-	}
-#endif
-    // fflush(LOCAL.fp);
+	DBJ_FERROR( LOCAL.fp );
+
   }
 
-  exit :
   /* Release lock */
   unlock();
 }
@@ -202,7 +233,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-bool enable_vt_mode()
+static bool enable_vt_mode()
 {
 	// Set output mode to handle virtual terminal sequences
 		HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -230,7 +261,7 @@ bool enable_vt_mode()
 ////////////////////////////////////////////////////////////////////////////////
 // typedef void (*log_lock_function_ptr)(void* udata, int lock);
 
-void  default_protector_function(void* udata, bool lock)
+static void  default_protector_function(void* udata, bool lock)
 {
 	static CRITICAL_SECTION   CS_ ;
 
@@ -246,6 +277,55 @@ void  default_protector_function(void* udata, bool lock)
 		DeleteCriticalSection(&CS_);
 	}
 }
+
+#undef  DBJ_LOG_IS_BIT
+#define DBJ_LOG_IS_BIT(S_, B_) (((int)S_ & (int)B_) != 0)
+
+bool dbj_log_setup
+(int setup /* DBJ_LOG_SETUP_ENUM */, const char* app_full_path)
+{
+	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_FILE_LINE_OFF)) {
+		log_set_fileline(false);
+	}
+	else
+		log_set_fileline(true);
+
+	// someday soon, windows console will not need this
+	enable_vt_mode();
+
+	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_MT)) {
+		log_set_lock(default_protector_function);
+	}
+
+	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_NO_CONSOLE)) {
+		log_set_quiet(true);
+#ifdef _DEBUG
+		if (app_full_path == NULL) {
+			perror(__FILE__ "\nWARNING: DBJ_LOG_NO_CONSOLE is set, but no log file is requested");
+		}
+#endif
+	}
+	else
+		log_set_quiet(false);
+
+	// caller does not want any kind of local log file
+	if (app_full_path == NULL) return true;
+
+	dbj_fhandle log_fh = dbj_fhandle_make(app_full_path);
+
+	// assure file handle is propely open and set
+	errno_t status = dbj_fhandle_assure(&log_fh);
+
+	assert(status == 0);
+
+	log_set_fp(
+		dbj_fhandle_file_ptr(&log_fh), log_fh.name
+	);
+	return true;
+} // dbj_log_setup
+
+#undef DBJ_LOG_IS_BIT
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -275,7 +355,7 @@ void  default_protector_function(void* udata, bool lock)
 
 #define dbj_fhandle_bad_descriptor -1 
 
-dbj_fhandle dbj_fhandle_make(const char* name_)
+static dbj_fhandle dbj_fhandle_make(const char* name_)
 {
 	dbj_fhandle fh = { '\0', dbj_fhandle_bad_descriptor };
 	int rez = _snprintf_s(fh.name, dbj_fhandle_max_name_len, _TRUNCATE, "%s.%s", name_, DBJ_FHANDLE_SUFFIX);
@@ -295,7 +375,7 @@ EMFILE	No more file descriptors available.
 ENOENT	File or path not found.
 ENODEV	No such device
 */
-errno_t  dbj_fhandle_assure(dbj_fhandle* self)
+static errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 {
 	assert(self);
 	assert(self->name);
@@ -363,9 +443,7 @@ NOTE: After _fdopen, close by using fclose, not _close.
 if (fp_) { ::fclose( fp_) ; fp_ = nullptr; }
 */
 
-
-
-FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
+static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 {
 	// https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fdopen-wfdopen?view=vs-2019
 	// "c" is important
@@ -385,10 +463,4 @@ FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 	return fp_;
 }
 
-errno_t  dbj_fhandle_commit(dbj_fhandle* self)
-{
-	assert(self);
-	int rez = _commit(self->file_descriptor);
-	assert(rez == 0);
-	return rez;
-}
+
