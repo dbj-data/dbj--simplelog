@@ -55,20 +55,20 @@ will complicate the public API
 bool enable_vt_mode();
 
 // dbj::simplelog::log_lock_function_ptr 
-// udata is user data pointer
+// user_data is user data pointer
 // lock == true  -- lock
 // lock == false -- unlock
-typedef void (*log_lock_function_ptr)(void* /*udata*/, bool /*lock*/);
+typedef void (*log_lock_function_ptr)(bool /*lock*/);
 
 // default uses win32 critial section
 // implemented in here
-// udata is unused 
-void  default_protector_function(void* /*udata*/, bool /*lock*/);
+// user_data is unused 
+void  default_protector_function( bool /*lock*/);
 
 // works but currently unused
 // primary use is to keep mutex or whatever else 
 // to be used by user locking function
-void log_set_udata(void*);
+void log_set_user_data(void*);
 // user locking function is set here
 // has to match log_lock_function_ptr signatured, and logic
 void log_set_lock(log_lock_function_ptr);
@@ -84,7 +84,7 @@ void log_set_quiet(bool);
 void log_set_fileline(bool);
 
 static struct {
-  void *udata;
+  void *user_data;
   log_lock_function_ptr lock;
   FILE *fp;
   int level;
@@ -117,14 +117,14 @@ static const char *level_colors[] = {
 
 static void lock(void)   {
   if (LOCAL.lock) {
-    LOCAL.lock(LOCAL.udata, 1);
+    LOCAL.lock(true);
   }
 }
 
 
 static void unlock(void) {
   if (LOCAL.lock) {
-    LOCAL.lock(LOCAL.udata, 0);
+    LOCAL.lock(false);
   }
 }
 
@@ -133,9 +133,14 @@ static void log_set_fileline(bool show)
 LOCAL.file_line_show = show;
 }
 
-static void log_set_udata(void *udata) {
-  LOCAL.udata = udata;
+static void log_set_user_data(void *user_data) {
+  LOCAL.user_data = user_data;
 }
+
+static void * log_get_user_data(void) {
+	return LOCAL.user_data;
+}
+
 
 static void log_set_lock(log_lock_function_ptr fn) {
   LOCAL.lock = fn;
@@ -259,13 +264,15 @@ static bool enable_vt_mode()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// typedef void (*log_lock_function_ptr)(void* udata, int lock);
+// typedef void (*log_lock_function_ptr)(void* user_data, int lock);
 
-static void  default_protector_function(void* udata, bool lock)
+/*
+this actually might be NOT slower than using some global CRITICAL_SECTION
+and entering/deleting it only once
+*/
+static void  default_protector_function(bool lock)
 {
 	static CRITICAL_SECTION   CS_ ;
-
-	(void)udata; // ignore for now
 
 	if (lock)
 	{
@@ -311,20 +318,46 @@ bool dbj_log_setup
 	// caller does not want any kind of local log file
 	if (app_full_path == NULL) return true;
 
-	dbj_fhandle log_fh = dbj_fhandle_make(app_full_path);
+	// make it once
+	static dbj_fhandle log_file_handle_shared_ ;
+
+	if (dbj_fhandle_is_empty(&log_file_handle_shared_))
+	{
+		log_file_handle_shared_ = dbj_fhandle_make(app_full_path);
+	}
 
 	// assure file handle is propely open and set
-	errno_t status = dbj_fhandle_assure(&log_fh);
+	errno_t status = dbj_fhandle_assure(&log_file_handle_shared_);
 
 	assert(status == 0);
 
 	log_set_fp(
-		dbj_fhandle_file_ptr(&log_fh), log_fh.name
+		dbj_fhandle_file_ptr(&log_file_handle_shared_), log_file_handle_shared_.name
 	);
+
+	// we keep it in user_data void * so we decouple from dbj_fhandle
+	log_set_user_data( &log_file_handle_shared_);
+
 	return true;
 } // dbj_log_setup
 
 #undef DBJ_LOG_IS_BIT
+
+void dbj_log_finalize(void)
+{
+	// make sure setup was called 
+	dbj_fhandle * fh = log_get_user_data();
+	assert(fh);
+
+	FILE* fp_ = dbj_fhandle_log_file_ptr(NULL);
+	assert(fp_);
+	DBJ_FERROR(fp_);
+	(void)_flushall();
+	// make sure it is fclose, not close
+	if (fp_) { fclose(fp_); fp_ = NULL ; }
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

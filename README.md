@@ -74,18 +74,7 @@ A bit of a advice: be very careful if not using absolute paths. One can very eas
 
 ### 1.2. You need to end it
 
-This is a Windows lib. And Windows is notorious for being very reluctant to flush. Thus please make sure at application end
-you place this snippet, (somewhere clever as you do):
-
-```cpp
-        FILE* fp_ = dbj_fhandle_log_file_ptr(NULL);
-        assert(fp_);
-        (void)_flushall();
-         // make sure it is fclose, not close
-        if (fp_) { fclose(fp_); fp_ = nullptr; }
-```
-
-> You must flush to see the log file contents eventually. 
+This is a Windows lib. And Windows is notorious for being very reluctant to flush. Thus please make sure at application end, you call `dbj_log_finalize()`. Otherwise lof file content might not show.
 
 **Roadmap** is to encapsulate this solution inside the library.
 

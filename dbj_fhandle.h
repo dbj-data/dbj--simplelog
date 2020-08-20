@@ -14,6 +14,7 @@
 #define _POSIX_C_SOURCE 200809L
 #endif
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -83,7 +84,7 @@ extern "C" {
 	file is opened in "wc" mode , see here
 	https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fdopen-wfdopen?view=vs-2019
 	*/
-	FILE* dbj_fhandle_file_ptr(dbj_fhandle* self);
+	FILE* dbj_fhandle_file_ptr(dbj_fhandle* /*self*/);
 
 	/*
 	must not call dbj_fhandle_file_ptr if result of dbj_fhandle_log_file_ptr() != NULL
@@ -93,6 +94,12 @@ extern "C" {
 	if (fp_) { ::fclose( fp_) ; fp_ = nullptr; }
 	*/
 	FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_);
+
+	inline bool dbj_fhandle_is_empty(dbj_fhandle* self)
+	{
+		assert(self);
+		return (self->name == NULL) || (self->name[0] == '\0');
+	}
 
 #ifdef __cplusplus
 } // extern "C"

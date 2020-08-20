@@ -42,8 +42,7 @@ if (ferror(FP_) != 0) {\
 #define DBJ_SIMPLE_LOG_VERSION "3.0.0"
 
 /*
-	ATTENTION! log file is not explicitly closed by this lib
-	please make sure at application end, you place this snippet, (somewhere clever as you do):
+
 
 	FILE* fp_ = dbj_fhandle_log_file_ptr(NULL);
 	assert(fp_);
@@ -61,6 +60,12 @@ extern "C" {
 
 	// log levels
 	enum { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
+
+	/*
+	ATTENTION! log file is not explicitly closed by this lib
+	please make sure at application end, you call this, (somewhere clever as you do)
+	*/
+	void dbj_log_finalize(void);
 
 	/*	for users to see*/
 	const char* const current_log_file_path();
