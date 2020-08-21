@@ -41,19 +41,6 @@ if (ferror(FP_) != 0) {\
 #define DBJ_SIMPLE_LOG_PATCH 0
 #define DBJ_SIMPLE_LOG_VERSION "3.0.0"
 
-/*
-
-
-	FILE* fp_ = dbj_fhandle_log_file_ptr(NULL);
-	assert(fp_);
-	DBJ_FERROR(fp_);
-	(void)_flushall();
-		// make sure it is fclose, not close
-	if (fp_) { fclose(fp_); fp_ = nullptr; }
-
-	You must flush to see the log file contents eventually
-*/
-
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -102,6 +89,8 @@ extern "C" {
 #define log_fatal(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
 /////////////////////////////////////////////////////////////////////////////////////
+/// for both release and debug builds
+/// 
 #ifndef  DBJ_LOG_DEFAULT_SETUP
 #define DBJ_LOG_DEFAULT_SETUP DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
 #endif
