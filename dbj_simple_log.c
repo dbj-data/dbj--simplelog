@@ -109,8 +109,24 @@ static const char *level_names[] = {
 };
 
 #ifdef DBJ_LOG_USE_COLOR
+
+#define VT100_ESC "\x1b["
+#define VT100_RESET VT100_ESC "0m"
+#define VT100_LIGHT_GRAY VT100_ESC "90m"
+#define VT100_LIGHT_BLUE VT100_ESC "94m"
+#define VT100_LIGHT_CYAN VT100_ESC "36m"
+#define VT100_LIGHT_YELLOW VT100_ESC "33m"
+#define VT100_LIGHT_GREEN VT100_ESC "32m"
+#define VT100_LIGHT_RED VT100_ESC "31m"
+#define VT100_LIGHT_MAGENTA VT100_ESC "35m"
+
 static const char *level_colors[] = {
-  "\x1b[94m", "\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m", "\x1b[35m"
+  /* TRACE */  VT100_LIGHT_BLUE, 
+  /* DEBUG */ VT100_LIGHT_CYAN,
+  /* INFO */ VT100_LIGHT_GREEN,
+  /* WARN */ VT100_LIGHT_YELLOW,
+  /* ERROR */ VT100_LIGHT_RED,
+  /* FATAL */ VT100_LIGHT_MAGENTA
 };
 #endif
 
@@ -205,17 +221,17 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 
 	if (LOCAL.file_line_show) {
 		fprintf(
-			stderr, "%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
+			stderr, "%s %s%-5s" VT100_RESET VT100_LIGHT_GRAY "%s : %d : "VT100_RESET ,
 			buf, level_colors[level], level_names[level], file, line);
 	}
 	else {
 		fprintf(
-			stderr, "%s %s%-5s\x1b[0m ",
+			stderr, "%s %s%-5s "VT100_RESET,
 			buf, level_colors[level], level_names[level] );
 	}
 #else
 	if ( LOCAL.file_line_show)
-    fprintf(stderr, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
+    fprintf(stderr, "%s %-5s %s : %d : ", buf, level_names[level], file, line);
 	else
 	fprintf(stderr, "%s %-5s ", buf, level_names[level]);
 #endif
@@ -328,7 +344,7 @@ bool dbj_log_setup
 		log_set_quiet(true);
 #ifdef _DEBUG
 		if (app_full_path == NULL) {
-			perror(__FILE__ "\nWARNING: DBJ_LOG_NO_CONSOLE is set, but no log file is requested");
+			perror("\nWARNING: DBJ_LOG_NO_CONSOLE is set, but no log file is requested");
 		}
 #endif
 	}
