@@ -59,8 +59,10 @@ extern "C" {
 #endif // __cplusplus
 
 	// log levels
-	enum { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
-
+#ifndef DBJ_LOG_LEVELS_ENUM_DEFINED
+#define DBJ_LOG_LEVELS_ENUM_DEFINED
+	typedef enum DBJ_LOG_LEVELS_ENUM { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL } DBJ_LOG_LEVELS_ENUM;
+#endif // DBJ_LOG_LEVELS_ENUM_DEFINED
 	/*
 	ATTENTION! log file is not explicitly closed by this lib
 	please make sure at application end, you call this, (somewhere clever as you do)

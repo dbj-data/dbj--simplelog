@@ -167,6 +167,23 @@ static void log_set_quiet(bool enable) {
 	LOCAL.quiet = enable;
 }
 
+inline void time_stamp_short( char (*buf)[16] )
+{
+	time_t t = time(NULL);
+	struct tm lt;
+	errno_t errno_rez = localtime_s(&lt, &t);
+	assert( errno_rez == 0 );
+	(*buf)[strftime((*buf), sizeof(*buf), "%H:%M:%S", &lt)] = '\0';
+}
+
+inline void time_stamp_long( char (*buf)[32] )
+{
+	time_t t = time(NULL);
+	struct tm lt;
+	errno_t errno_rez = localtime_s(&lt, &t);
+	assert( errno_rez == 0 );
+	(*buf)[strftime((*buf), sizeof(*buf), "%Y-%m-%d %H:%M:%S", &lt)] = '\0';
+}
 
 void log_log(int level, const char *file, int line, const char *fmt, ...) 
 {
@@ -175,16 +192,14 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 	
 	// not used currently --> 	if (level < LOCAL.level)   goto exit;
 
-  /* Get current time */
-  time_t t = time(NULL);
-  struct tm lt;
-	errno_t errno_rez  = localtime_s(&lt, &t);
+	// errno_t errno_rez = 0; 
 
   /* Log to console using stderr */
   if (!LOCAL.quiet) {
-    va_list args;
+
+	 va_list args;
     char buf[16];
-    buf[strftime(buf, sizeof(buf), "%H:%M:%S", &lt)] = '\0';
+	time_stamp_short( & buf);
 
 #ifdef DBJ_LOG_USE_COLOR
 
@@ -209,14 +224,16 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
     vfprintf(stderr, fmt, args);
     va_end(args);
     fprintf(stderr, "\n");
-    // fflush(stderr);
+
   } // log not quiet
 
   /* Log to file */
   if (LOCAL.fp) {
     va_list args;
-    char buf[32];
-    buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", & lt)] = '\0';
+
+	char buf[32];
+	time_stamp_long(& buf);
+
 	if (LOCAL.file_line_show)
     fprintf(LOCAL.fp, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
 	else
@@ -233,6 +250,8 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
   /* Release lock */
   unlock();
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 #define STRICT
 #define WIN32_LEAN_AND_MEAN
@@ -268,10 +287,11 @@ static bool enable_vt_mode()
 
 /*
 this actually might be NOT slower than using some global CRITICAL_SECTION
-and entering/deleting it only once
+and entering/deleting it only once ... why not measuring it?
 */
 static void  default_protector_function(bool lock)
 {
+	// Think: this is one per process
 	static CRITICAL_SECTION   CS_ ;
 
 	if (lock)
