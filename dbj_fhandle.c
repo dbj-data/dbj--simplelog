@@ -14,7 +14,7 @@
 //#include <stdio.h>
 //#include <io.h>
 //#include <fcntl.h>
-//#include <assert.h>
+//#include <DBJ_ASSERT.h>
 
 // _fstat
 #include <sys/stat.h>
@@ -26,7 +26,7 @@ dbj_fhandle dbj_fhandle_make(const char* name_)
 {
 	dbj_fhandle fh = { '\0', dbj_fhandle_bad_descriptor };
 	int rez = _snprintf_s(fh.name, dbj_fhandle_max_name_len, _TRUNCATE, "%s.%s", name_, DBJ_FHANDLE_SUFFIX);
-	assert(rez > 0);
+	DBJ_ASSERT(rez > 0);
 	return fh;
 }
 
@@ -44,8 +44,8 @@ ENODEV	No such device
 */
 errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 {
-	assert(self);
-	assert(self->name);
+	DBJ_ASSERT(self);
+	DBJ_ASSERT(self->name);
 
 	// int fd = self->file_descriptor;
 
@@ -79,7 +79,7 @@ errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 	case S_IFREG:  //regular file
 		break;
 	default:
-		assert( false );
+		DBJ_ASSERT( false );
 		return ENODEV;
 		break;
 	}
@@ -108,21 +108,21 @@ FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */ )
 	static const char* default_open_mode = "wc";
 
 	const char* options_ = default_open_mode;
-	assert(options_);
-	assert(self->file_descriptor > dbj_fhandle_bad_descriptor);
+	DBJ_ASSERT(options_);
+	DBJ_ASSERT(self->file_descriptor > dbj_fhandle_bad_descriptor);
 	// Associates a stream with a file that was previously opened for low-level I/O.
 	FILE* fp_ = dbj_fhandle_log_file_ptr(
 		_fdopen(self->file_descriptor, options_)
 	);
-	assert(fp_ != NULL);
+	DBJ_ASSERT(fp_ != NULL);
 	DBJ_FERROR(fp_);
 	return fp_;
 }
 
 errno_t  dbj_fhandle_commit(dbj_fhandle* self)
 {
-	assert(self);
+	DBJ_ASSERT(self);
 	int rez = _commit(self->file_descriptor);
-	assert(rez == 0);
+	DBJ_ASSERT(rez == 0);
 	return rez;
 }

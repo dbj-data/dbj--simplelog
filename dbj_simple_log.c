@@ -1,15 +1,4 @@
 /* (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ */
-
-#ifdef __STDC_ALLOC_LIB__
-#define __STDC_WANT_LIB_EXT2__ 1
-#else
-#define _POSIX_C_SOURCE 200809L
-#endif
-
-
-#include "dbj_fhandle.h"
-#include "dbj_simple_log.h"
-
 /*
  * Copyright (c) 2017 rxi
  *
@@ -32,13 +21,23 @@
  * IN THE SOFTWARE.
  */
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <time.h>
-#include <stdbool.h>
+#ifdef __STDC_ALLOC_LIB__
+#define __STDC_WANT_LIB_EXT2__ 1
+#else
+#define _POSIX_C_SOURCE 200809L
+#endif
+
+#include "dbj_fhandle.h"
+#include "dbj_simple_log.h"
+
+// pch.h is implicitly included
+// and this is in there
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <stdarg.h>
+//#include <string.h>
+//#include <time.h>
+//#include <stdbool.h>
 
 #ifndef errno_t
 typedef int errno_t;
@@ -91,7 +90,7 @@ static struct {
   int quiet;
   bool file_line_show;
   char log_f_name[BUFSIZ];
-} LOCAL = { 0, 0, 0, LOG_TRACE, 0, true, '\0'} ;
+} LOCAL = { 0, 0, 0, DBJ_LOG_TRACE, 0, true, '\0'} ;
 
 const char* const current_log_file_path() {
 	return LOCAL.log_f_name;
@@ -100,7 +99,7 @@ const char* const current_log_file_path() {
 static const char* set_log_file_name(const char new_name[BUFSIZ]) {
 
 	errno_t rez = strncpy_s(LOCAL.log_f_name, BUFSIZ, new_name, BUFSIZ - 1);
-	assert(rez == 0);
+	DBJ_ASSERT(rez == 0);
 	return LOCAL.log_f_name;
 }
 
@@ -164,7 +163,7 @@ static void log_set_lock(log_lock_function_ptr fn) {
 
 static void log_set_fp(FILE *fp, const char * file_path_name ) {
 
-	assert( fp );
+	DBJ_ASSERT( fp );
   LOCAL.fp = fp;
 
   if (!file_path_name) {
@@ -188,7 +187,7 @@ inline void time_stamp_short( char (*buf)[16] )
 	time_t t = time(NULL);
 	struct tm lt;
 	errno_t errno_rez = localtime_s(&lt, &t);
-	assert( errno_rez == 0 );
+	DBJ_ASSERT( errno_rez == 0 );
 	(*buf)[strftime((*buf), sizeof(*buf), "%H:%M:%S", &lt)] = '\0';
 }
 
@@ -197,11 +196,11 @@ inline void time_stamp_long( char (*buf)[32] )
 	time_t t = time(NULL);
 	struct tm lt;
 	errno_t errno_rez = localtime_s(&lt, &t);
-	assert( errno_rez == 0 );
+	DBJ_ASSERT( errno_rez == 0 );
 	(*buf)[strftime((*buf), sizeof(*buf), "%Y-%m-%d %H:%M:%S", &lt)] = '\0';
 }
 
-void log_log(int level, const char *file, int line, const char *fmt, ...) 
+void dbj_simple_log_log(int level, const char *file, int line, const char *fmt, ...) 
 {
 	/* Acquire lock */
 	lock();
@@ -365,7 +364,7 @@ bool dbj_log_setup
 	// assure file handle is propely open and set
 	errno_t status = dbj_fhandle_assure(&log_file_handle_shared_);
 
-	assert(status == 0);
+	DBJ_ASSERT(status == 0);
 
 	log_set_fp(
 		dbj_fhandle_file_ptr(&log_file_handle_shared_), log_file_handle_shared_.name
@@ -383,10 +382,10 @@ void dbj_log_finalize(void)
 {
 	// make sure setup was called 
 	dbj_fhandle * fh = log_get_user_data();
-	assert(fh);
+	DBJ_ASSERT(fh);
 
 	FILE* fp_ = dbj_fhandle_log_file_ptr(NULL);
-	assert(fp_);
+	DBJ_ASSERT(fp_);
 	DBJ_FERROR(fp_);
 	(void)_flushall();
 	// make sure it is fclose, not close
@@ -410,14 +409,6 @@ void dbj_log_finalize(void)
 #else
 #define _POSIX_C_SOURCE 200809L
 #endif
-
-// #include "dbj_fhandle.h"
-#include <string.h>
-#include <stdio.h>
-#include <io.h>
-#include <fcntl.h>
-#include <assert.h>
-
 // _fstat
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -428,7 +419,7 @@ static dbj_fhandle dbj_fhandle_make(const char* name_)
 {
 	dbj_fhandle fh = { '\0', dbj_fhandle_bad_descriptor };
 	int rez = _snprintf_s(fh.name, dbj_fhandle_max_name_len, _TRUNCATE, "%s.%s", name_, DBJ_FHANDLE_SUFFIX);
-	assert(rez > 0);
+	DBJ_ASSERT(rez > 0);
 	return fh;
 }
 
@@ -446,8 +437,8 @@ ENODEV	No such device
 */
 static errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 {
-	assert(self);
-	assert(self->name);
+	DBJ_ASSERT(self);
+	DBJ_ASSERT(self->name);
 
 	// int fd = self->file_descriptor;
 
@@ -482,7 +473,7 @@ static errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 	case S_IFREG:  //regular file
 		break;
 	default:
-		assert(false);
+		DBJ_ASSERT(false);
 		return ENODEV;
 		break;
 	}
@@ -508,13 +499,13 @@ static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 	static const char* default_open_mode = "wc";
 
 	const char* options_ = default_open_mode;
-	assert(options_);
-	assert(self->file_descriptor > dbj_fhandle_bad_descriptor);
+	DBJ_ASSERT(options_);
+	DBJ_ASSERT(self->file_descriptor > dbj_fhandle_bad_descriptor);
 	// Associates a stream with a file that was previously opened for low-level I/O.
 	FILE* fp_ = dbj_fhandle_log_file_ptr(
 		_fdopen(self->file_descriptor, options_)
 	);
-	assert(fp_ != NULL);
+	DBJ_ASSERT(fp_ != NULL);
 	DBJ_FERROR(fp_);
 	return fp_;
 }

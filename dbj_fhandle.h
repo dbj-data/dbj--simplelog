@@ -14,7 +14,7 @@
 #define _POSIX_C_SOURCE 200809L
 #endif
 
-#include <assert.h>
+#include "lib/dbj_assert.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -100,7 +100,7 @@ extern "C" {
 
 		if (next_fp_) {
 			// must have closed previous explicitly before
-			assert(single_fp_ == NULL);
+			DBJ_ASSERT(single_fp_ == NULL);
 			single_fp_ = next_fp_;
 		}
 
@@ -109,7 +109,7 @@ extern "C" {
 
 	inline bool dbj_fhandle_is_empty(dbj_fhandle* self)
 	{
-		assert(self);
+		DBJ_ASSERT(self);
 		return (self->name == NULL) || (self->name[0] == '\0');
 	}
 

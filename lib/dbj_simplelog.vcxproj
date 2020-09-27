@@ -157,10 +157,10 @@
   <ItemGroup>
     <ClInclude Include="..\dbj_fhandle.h" />
     <ClInclude Include="..\dbj_simple_log.h" />
+    <ClInclude Include="dbj_assert.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\dbj_fhandle.c" />
     <ClCompile Include="..\dbj_simple_log.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -30,16 +30,17 @@ if (ferror(FP_) != 0) {\
 #define DBJ_FERROR( FP_ )
 #endif // _DEBUG
 
-#include <assert.h>
+#include "lib/dbj_assert.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
 #define DBJ_LOG_USE_COLOR
+
 #define DBJ_SIMPLE_LOG_MAJOR 3
-#define DBJ_SIMPLE_LOG_MINOR 0
+#define DBJ_SIMPLE_LOG_MINOR 5
 #define DBJ_SIMPLE_LOG_PATCH 0
-#define DBJ_SIMPLE_LOG_VERSION "3.0.0"
+#define DBJ_SIMPLE_LOG_VERSION "3.5.0"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,7 +49,9 @@ extern "C" {
 	// log levels
 #ifndef DBJ_LOG_LEVELS_ENUM_DEFINED
 #define DBJ_LOG_LEVELS_ENUM_DEFINED
-	typedef enum DBJ_LOG_LEVELS_ENUM { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL } DBJ_LOG_LEVELS_ENUM;
+	typedef enum DBJ_LOG_LEVELS_ENUM {
+		DBJ_LOG_TRACE, DBJ_LOG_DEBUG, DBJ_LOG_INFO, DBJ_LOG_WARN, DBJ_LOG_ERROR, DBJ_LOG_FATAL
+	} DBJ_LOG_LEVELS_ENUM;
 #endif // DBJ_LOG_LEVELS_ENUM_DEFINED
 	/*
 	ATTENTION! log file is not explicitly closed by this lib
@@ -59,11 +62,11 @@ extern "C" {
 	/*	for users to see*/
 	const char* const current_log_file_path();
 
-	/* for users ot be able to flush and close in their finalizers */
+	/* for users to be able to flush and close in their finalizers */
 	FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_);
 
-	// all eventually goes in here
-	void log_log(int /*level*/, const char* /*file*/, int /*line*/, const char* /*fmt*/, ...);
+	// all eventually goes through here
+	void dbj_simple_log_log(int /*level*/, const char* /*file*/, int /*line*/, const char* /*fmt*/, ...);
 
 	typedef enum  DBJ_LOG_SETUP_ENUM {
 		/* set to Multi Threaded */
@@ -79,48 +82,71 @@ extern "C" {
 	bool dbj_log_setup
 	(int setup /* DBJ_LOG_SETUP_ENUM */, const char* app_full_path);
 
-	// primary usage is through these
+/////////////////////////////////////////////////////////////////////////////////////
+// primary usage is through these macros in the back
 
-#define log_trace(...) log_log(LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
-#define log_debug(...) log_log(LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
-#define log_info(...)  log_log(LOG_INFO,  __FILE__, __LINE__, __VA_ARGS__)
-#define log_warn(...)  log_log(LOG_WARN,  __FILE__, __LINE__, __VA_ARGS__)
-#define log_error(...) log_log(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
-#define log_fatal(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
+#define dbj_log_trace(...) dbj_simple_log_log(DBJ_LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
+#define dbj_log_debug(...) dbj_simple_log_log(DBJ_LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
+#define dbj_log_info(...)  dbj_simple_log_log(DBJ_LOG_INFO,  __FILE__, __LINE__, __VA_ARGS__)
+#define dbj_log_warn(...)  dbj_simple_log_log(DBJ_LOG_WARN,  __FILE__, __LINE__, __VA_ARGS__)
+#define dbj_log_error(...) dbj_simple_log_log(DBJ_LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
+#define dbj_log_fatal(...) dbj_simple_log_log(DBJ_LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
+
+// and these macros in the front
+// which are much more senisitive to name clash
+// unles you do not use your set
+#ifndef DBJ_USER_DEFINED_MACRO_NAMES
+	#define LOG_TRACE dbj_log_trace
+	#define LOG_DEBUG dbj_log_debug
+	#define LOG_INFO dbj_log_info
+	#define LOG_WARN dbj_log_warn
+	#define LOG_ERROR dbj_log_error
+	#define LOG_FATAL dbj_log_fatal
+#endif // DBJ_USER_DEFINED_MACRO_NAMES
+
 
 /////////////////////////////////////////////////////////////////////////////////////
-/// for both release and debug builds
+/// predefined setups for both release and debug builds
 /// 
-#ifndef  DBJ_LOG_DEFAULT_SETUP
+#undef  DBJ_LOG_DEFAULT_FILE_SETUP
 #define DBJ_LOG_DEFAULT_SETUP DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
-#endif
 
-#ifndef  DBJ_LOG_DEFAULT_WITH_CONSOLE
+#undef  DBJ_LOG_DEFAULT_WITH_CONSOLE
 #define DBJ_LOG_DEFAULT_WITH_CONSOLE DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT 
-#endif
+
+/// defaul is log to file, MT resilient, no console
+/// unless you define your combination that is
+#ifndef  DBJ_LOG_DEFAULT_SETUP
+#define  DBJ_LOG_DEFAULT_SETUP DBJ_LOG_DEFAULT_FILE_SETUP
+#endif // ! DBJ_LOG_DEFAULT_SETUP
 /////////////////////////////////////////////////////////////////////////////////////
 
+	// make sure you call this once upon app startup
+	// with __argv[0] 
 	inline int dbj_simple_log_startup(const char* app_full_path)
 	{
-		assert(app_full_path);
+		DBJ_ASSERT(app_full_path);
 
 		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, app_full_path))
 			return EXIT_FAILURE;
 
-		log_trace(" %s", "                                                              ");
-		log_trace(" %s", "--------------------------------------------------------------");
-		log_trace(" %s", "                                                              ");
-		log_trace(" Application: %s", app_full_path);
-		log_trace(" Log file: %s", current_log_file_path());
-		log_trace(" %s", "                                                              ");
+		// this will thus go into which ever log target you have set
+		// log file or console or both indeed.
+
+		dbj_log_trace(" %s", "                                                              ");
+		dbj_log_trace(" %s", "--------------------------------------------------------------");
+		dbj_log_trace(" %s", "                                                              ");
+		dbj_log_trace(" Application: %s", app_full_path);
+		dbj_log_trace(" Log file: %s", current_log_file_path());
+		dbj_log_trace(" %s", "                                                              ");
 
 #ifdef DBJ_LOG_TESTING
-		log_trace("Log  TRACE");
-		log_debug("Log  DEBUG");
-		log_info("Log  INFO");
-		log_warn("Log  WARN");
-		log_error("Log  ERROR");
-		log_fatal("Log  FATAL");
+		dbj_log_trace("Log  TRACE");
+		dbj_log_debug("Log  DEBUG");
+		dbj_log_info("Log  INFO");
+		dbj_log_warn("Log  WARN");
+		dbj_log_error("Log  ERROR");
+		dbj_log_fatal("Log  FATAL");
 #endif
 		return EXIT_SUCCESS;
 	}

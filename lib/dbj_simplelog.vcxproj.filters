@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="lib_single_header">
+      <UniqueIdentifier>{300d3670-2a98-4a76-b828-16568d0e66bd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -22,14 +25,14 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\dbj_simple_log.h">
+      <Filter>lib_single_header</Filter>
+    </ClInclude>
+    <ClInclude Include="dbj_assert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\dbj_fhandle.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\dbj_simple_log.c">

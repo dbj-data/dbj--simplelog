@@ -6,7 +6,8 @@
 
 - [Why logging?](#why-logging)
 - [1. How to use](#1-how-to-use)
-  - [1.1. You need to start it](#11-you-need-to-start-it)
+  - [Alert! I have a name clash?!](#alert-i-have-a-name-clash)
+  - [1.1. You need to start it properly](#11-you-need-to-start-it-properly)
   - [1.2. You need to end it](#12-you-need-to-end-it)
 - [2. Setup options](#2-setup-options)
   - [2.1. DBJ_LOG_DEFAULT_SETUP](#21-dbj_log_default_setup)
@@ -29,28 +30,42 @@ Also in here there is a "resilience in presence of multiple threads ", built in.
 Through these macros
 
 ```cpp
-log_trace(...) ;
-
-log_debug(...) ;
-
-log_info(...);
-
-log_warn(...);
-
-log_error(...) ;
-
-log_fatal(...) ;
+LOG_TRACE(...) ;
+LOG_DEBUG(...) ;
+LOG_INFO(...)  ;
+LOG_WARN(...)  ;
+LOG_ERROR(...) ;
+LOG_FATAL(...) ;
 ```
 
-Usage syntax is exactly the same as for the `printf` family, format string.
-
-If `DBJ_LOG_USE_COLOR` is defined output is coloured. By default it is.
+Usage syntax is exactly the same as for the `printf` family, format string and the rest.
+If `DBJ_LOG_USE_COLOR` is defined output is coloured. And by default it is.
 
 ![coloured view in vs code](doc/in_vs_code.jpg)
 
 NOTE: above is VS Code view which indeed is coloured. But colors are not the same as on Windows 10 console.
 
-### 1.1. You need to start it
+### Alert! I have a name clash?!
+
+And we are not surprised. But don't fret. Macros in the "front" are defined like so:
+
+```cpp
+// and these macros in the front
+// which are much more senisitive to name clash
+// unles you do not use your set
+#ifndef DBJ_USER_DEFINED_MACRO_NAMES
+	#define LOG_TRACE dbj_log_trace
+	#define LOG_DEBUG dbj_log_debug
+	#define LOG_INFO dbj_log_info
+	#define LOG_WARN dbj_log_warn
+	#define LOG_ERROR dbj_log_error
+	#define LOG_FATAL dbj_log_fatal
+#endif // DBJ_USER_DEFINED_MACRO_NAMES
+```
+Obviously you can define `DBJ_USER_DEFINED_MACRO_NAMES` and provide your own macro names. Hopefully that's all you need to know to solve the name clash if it happens to your project.
+
+### 1.1. You need to start it properly
+
 On start-up one can use the set-up function `dbj_log_setup`. But we recommend to use the `dbj_simple_log_startup(const char* app_full_path)` 
 immediately after main() starts.
 
@@ -68,9 +83,11 @@ int main( const int argc, char * argv[] )
 ```
 > Important: log file is reset on each application run. That is the current policy.
 
+`dbj_simple_log_startup` will start the things for you and will output the proper log starting header.
+
 It is on the **roadmap** to offer several setup combinations to use on startup. Including log file opening options
 
-A bit of a advice: be very careful if not using absolute paths. One can very easily loose the log file, if using the relative paths.
+> Advice: be very careful if not using absolute paths. One can very easily loose the log file, if using the relative paths.
 
 ### 1.2. You need to end it
 
