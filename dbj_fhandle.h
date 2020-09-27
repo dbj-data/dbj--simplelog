@@ -93,7 +93,19 @@ extern "C" {
 	NOTE: After _fdopen, close by using fclose, not _close.
 	if (fp_) { ::fclose( fp_) ; fp_ = nullptr; }
 	*/
-	FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_);
+	// there can be only one
+	inline FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_)
+	{
+		static FILE* single_fp_ = NULL;
+
+		if (next_fp_) {
+			// must have closed previous explicitly before
+			assert(single_fp_ == NULL);
+			single_fp_ = next_fp_;
+		}
+
+		return single_fp_;
+	}
 
 	inline bool dbj_fhandle_is_empty(dbj_fhandle* self)
 	{

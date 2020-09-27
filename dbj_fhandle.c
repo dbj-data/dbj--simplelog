@@ -1,17 +1,20 @@
+
 /* (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ */
 
-#ifdef __STDC_ALLOC_LIB__
-#define __STDC_WANT_LIB_EXT2__ 1
-#else
-#define _POSIX_C_SOURCE 200809L
-#endif
+// NOTE! pch.h is implicitly included!
+
+//#ifdef __STDC_ALLOC_LIB__
+//#define __STDC_WANT_LIB_EXT2__ 1
+//#else
+//#define _POSIX_C_SOURCE 200809L
+//#endif
 
 #include "dbj_fhandle.h"
-#include <string.h>
-#include <stdio.h>
-#include <io.h>
-#include <fcntl.h>
-#include <assert.h>
+//#include <string.h>
+//#include <stdio.h>
+//#include <io.h>
+//#include <fcntl.h>
+//#include <assert.h>
 
 // _fstat
 #include <sys/stat.h>
@@ -59,7 +62,7 @@ errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 		return rez;
 	}
 
-	struct stat sb;
+	struct _stat64i32 sb;
 	rez = _fstat(self->file_descriptor, &sb);
 	if (rez != 0) {
 		DBJ_PERROR;
@@ -83,19 +86,7 @@ errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 	return (errno_t)0;
 };
 
-// there can be only one
-FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_)
-{
-	static FILE* single_fp_ = NULL;
 
-	if (next_fp_) {
-		// must have closed previous explicitly before
-		assert(single_fp_ == NULL);
-		single_fp_ = next_fp_;
-	}
-
-	return single_fp_;
-}
 /*
 ATTENTION! dbj_fhandle_assure must be called before this to assure the file handle from name given
 ATTENTION! file_handle.file_ptr() returns FILE * which is not explicitly closed by this lib

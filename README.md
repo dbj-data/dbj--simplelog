@@ -46,7 +46,7 @@ Usage syntax is exactly the same as for the `printf` family, format string.
 
 If `DBJ_LOG_USE_COLOR` is defined output is coloured. By default it is.
 
-![coloured view in vs code](in_vs_code.jpg)
+![coloured view in vs code](doc/in_vs_code.jpg)
 
 NOTE: above is VS Code view which indeed is coloured. But colors are not the same as on Windows 10 console.
 

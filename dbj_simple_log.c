@@ -489,19 +489,6 @@ static errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 	return (errno_t)0;
 };
 
-// there can be only one
-FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_)
-{
-	static FILE* single_fp_ = NULL;
-
-	if (next_fp_) {
-		// must have closed previous explicitly before
-		assert(single_fp_ == NULL);
-		single_fp_ = next_fp_;
-	}
-
-	return single_fp_;
-}
 /*
 ATTENTION! dbj_fhandle_assure must be called before this to assure the file handle from name given
 ATTENTION! file_handle.file_ptr() returns FILE * which is not explicitly closed by this lib
