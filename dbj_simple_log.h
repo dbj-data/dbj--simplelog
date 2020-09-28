@@ -37,6 +37,13 @@ if (ferror(FP_) != 0) {\
 
 #define DBJ_LOG_USE_COLOR
 
+// by default
+// undef'd 
+// do it before including this header
+// 
+#define DBJ_SIMPLE_LOG_AUTO_FLUSH
+
+
 #define DBJ_SIMPLE_LOG_MAJOR 3
 #define DBJ_SIMPLE_LOG_MINOR 5
 #define DBJ_SIMPLE_LOG_PATCH 0

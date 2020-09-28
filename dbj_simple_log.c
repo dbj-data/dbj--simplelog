@@ -267,6 +267,12 @@ void dbj_simple_log_log(int level, const char *file, int line, const char *fmt, 
 	fprintf(LOCAL.fp, "\n");
 
 	DBJ_FERROR( LOCAL.fp );
+	
+#ifdef DBJ_SIMPLE_LOG_AUTO_FLUSH
+	DBJ_ASSERT( LOCAL.fp);
+	DBJ_FERROR( LOCAL.fp);
+	(void)_flushall();
+#endif // DBJ_SIMPLE_LOG_AUTO_FLUSH
 
   }
 

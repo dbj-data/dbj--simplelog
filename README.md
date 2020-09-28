@@ -4,16 +4,17 @@
 
 > (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ 
 
-- [Why logging?](#why-logging)
-- [1. How to use](#1-how-to-use)
-- [Alert! I have a name clash?!](#alert-i-have-a-name-clash)
-  - [1.1. You need to start it properly](#11-you-need-to-start-it-properly)
-  - [1.2. You need to end it properly](#12-you-need-to-end-it-properly)
-- [2. Setup options](#2-setup-options)
-  - [2.1. DBJ_LOG_DEFAULT_SETUP](#21-dbj_log_default_setup)
-- [3. Building the thing](#3-building-the-thing)
+- [1. Why logging?](#1-why-logging)
+- [2. How to use](#2-how-to-use)
+- [3. Alert! I have a name clash?!](#3-alert-i-have-a-name-clash)
+  - [3.1. You need to start it properly](#31-you-need-to-start-it-properly)
+  - [3.2. You need to end it properly](#32-you-need-to-end-it-properly)
+    - [3.2.1. Autoflush](#321-autoflush)
+- [4. Setup options](#4-setup-options)
+  - [4.1. DBJ_LOG_DEFAULT_SETUP](#41-dbj_log_default_setup)
+- [5. Building the thing](#5-building-the-thing)
 
-## Why logging?
+## 1. Why logging?
 
 C/C++ code is used to build software in the components making a back tier. Without UI and without human presence.
 
@@ -25,7 +26,7 @@ Console output is used while testing and debugging. Be sure to switch off consol
 
 Also in here there is a "resilience in presence of multiple threads ", built in.
 
-## 1. How to use
+## 2. How to use
 
 Through these macros
 
@@ -74,7 +75,7 @@ wprintf (L"That narrow string was: %S", narrow_ ) ;
 
 <h3>&nbsp;</h3>
 
-## Alert! I have a name clash?!
+## 3. Alert! I have a name clash?!
 
 <h3>&nbsp;</h3>
 
@@ -97,7 +98,7 @@ Obviously you can define `DBJ_USER_DEFINED_MACRO_NAMES` and provide your own mac
 
 <h3>&nbsp;</h3>
 
-### 1.1. You need to start it properly
+### 3.1. You need to start it properly
 <h3>&nbsp;</h3>
 
 On start-up one can use the set-up function `dbj_log_setup`. But we recommend to use the `dbj_simple_log_startup(const char* app_full_path)` 
@@ -125,7 +126,7 @@ It is on the **roadmap** to offer several setup combinations to use on startup. 
 
 <h3>&nbsp;</h3>
 
-### 1.2. You need to end it properly
+### 3.2. You need to end it properly
 <h3>&nbsp;</h3>
 
 This is a Windows lib. And Windows is notorious for being very reluctant to flush. Thus please make sure at application end, you call `dbj_log_finalize()`. Otherwise lof file content might not show.
@@ -133,7 +134,15 @@ This is a Windows lib. And Windows is notorious for being very reluctant to flus
 **Roadmap** is to encapsulate this solution inside the library.
 <h3>&nbsp;</h3>
 
-## 2. Setup options
+#### 3.2.1. Autoflush
+
+Currently inside `dbj_simple_log.h`.
+```cpp
+#define DBJ_SIMPLE_LOG_AUTO_FLUSH
+```
+Thus we have flush after each write. Safe and slow(er). 
+
+## 4. Setup options
 <h3>&nbsp;</h3>
 
 | Setup tag  | the effect  |
@@ -143,7 +152,7 @@ DBJ_LOG_TO_APP_PATH  | If app full path is given  use it to obtain log file name
 DBJ_LOG_FILE_LINE_OFF | Exclude file and line, from time stamp 
 DBJ_LOG_NO_CONSOLE | No console output. Beware, if this is set and no file path is given you will have no logging. 
 
-### 2.1. DBJ_LOG_DEFAULT_SETUP
+### 4.1. DBJ_LOG_DEFAULT_SETUP
 
 Users can define this macro to change the default setup. 
 Default setup is defined as:
@@ -164,7 +173,7 @@ For when you use the debug builds you might need a console output too. For that 
 ```
 <h3>&nbsp;</h3>
 
-## 3. Building the thing
+## 5. Building the thing
 <h3>&nbsp;</h3>
 
 This is to be built with CL.exe, which in reality means C99, but somewhat undocumented. **Roadmap** is to switch to clang 10.x and use C11 goodies?
