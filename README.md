@@ -6,12 +6,12 @@
 
 - [Why logging?](#why-logging)
 - [1. How to use](#1-how-to-use)
-  - [Alert! I have a name clash?!](#alert-i-have-a-name-clash)
+- [Alert! I have a name clash?!](#alert-i-have-a-name-clash)
   - [1.1. You need to start it properly](#11-you-need-to-start-it-properly)
-  - [1.2. You need to end it](#12-you-need-to-end-it)
+  - [1.2. You need to end it properly](#12-you-need-to-end-it-properly)
 - [2. Setup options](#2-setup-options)
   - [2.1. DBJ_LOG_DEFAULT_SETUP](#21-dbj_log_default_setup)
-- [3. Building](#3-building)
+- [3. Building the thing](#3-building-the-thing)
 
 ## Why logging?
 
@@ -45,7 +45,38 @@ If `DBJ_LOG_USE_COLOR` is defined output is coloured. And by default it is.
 
 NOTE: above is VS Code view which indeed is coloured. But colors are not the same as on Windows 10 console.
 
-### Alert! I have a name clash?!
+
+<h2>BIG FAT WARNINGS</h2>
+<h3>&nbsp;</h3>
+<h3>1. Do not enter escape codes `\n \v \f \t \r \b` </h3> 
+<h3>&nbsp;</h3>
+into your strings, you are sending to logging. If you do your output will be strange. And we will not stop you :)
+
+Actually we could but that will slow everybody else down.
+<h3>&nbsp;</h3>
+<h3>2. dbj simple log is not wchar_t compatible</h3>
+<h3>&nbsp;</h3>
+But. That is not a problem. How? Because Microsoft extension to `printf` family formatting chars has capital `%S`. That translates strings to/from wide/narrow. Example:
+
+```cpp
+// some not S_OK HRESULT
+_com_error  comerr(hr_);
+// log it but as narrow string
+// use '%S' not '%s'
+dbj_log_fatal("IMMEDIATE EXIT !! '%S'", comerr.ErrorMessage());
+```
+And the opposite works too.
+```cpp
+const char * narrow_ = "Not wchar_t * string" ;
+
+wprintf (L"That narrow string was: %S", narrow_ ) ;
+```
+
+<h3>&nbsp;</h3>
+
+## Alert! I have a name clash?!
+
+<h3>&nbsp;</h3>
 
 And we are not surprised. But don't fret. Macros in the "front" are defined like so:
 
@@ -64,7 +95,10 @@ And we are not surprised. But don't fret. Macros in the "front" are defined like
 ```
 Obviously you can define `DBJ_USER_DEFINED_MACRO_NAMES` and provide your own macro names. Hopefully that's all you need to know to solve the name clash if it happens to your project.
 
+<h3>&nbsp;</h3>
+
 ### 1.1. You need to start it properly
+<h3>&nbsp;</h3>
 
 On start-up one can use the set-up function `dbj_log_setup`. But we recommend to use the `dbj_simple_log_startup(const char* app_full_path)` 
 immediately after main() starts.
@@ -89,14 +123,18 @@ It is on the **roadmap** to offer several setup combinations to use on startup. 
 
 > Advice: be very careful if not using absolute paths. One can very easily loose the log file, if using the relative paths.
 
-### 1.2. You need to end it
+<h3>&nbsp;</h3>
+
+### 1.2. You need to end it properly
+<h3>&nbsp;</h3>
 
 This is a Windows lib. And Windows is notorious for being very reluctant to flush. Thus please make sure at application end, you call `dbj_log_finalize()`. Otherwise lof file content might not show.
 
 **Roadmap** is to encapsulate this solution inside the library.
-
+<h3>&nbsp;</h3>
 
 ## 2. Setup options
+<h3>&nbsp;</h3>
 
 | Setup tag  | the effect  |
 |---|---|
@@ -124,13 +162,20 @@ For when you use the debug builds you might need a console output too. For that 
 
 #include "dbj--simplelog/dbj_simple_log.h"
 ```
+<h3>&nbsp;</h3>
 
-## 3. Building
+## 3. Building the thing
+<h3>&nbsp;</h3>
 
-Built with CL.exe, which in reality means C99, but somewhat undocumented. **Roadmap** is to switch to clang 10.x and use C11 goodies.
+This is to be built with CL.exe, which in reality means C99, but somewhat undocumented. **Roadmap** is to switch to clang 10.x and use C11 goodies?
 
-How to use: best add it as a git submodule. Include `dbj_simple_log.h` 
-Include it's only C file  `dbj_simple_log.c` in your project. Use.
+How to use this repo in your projects? 
+
+Provided is Visual Studio lib making project.
+
+In your code include `dbj_simple_log.h` , Link in the lib.
+
+The rest is history ...
 
 -------
 

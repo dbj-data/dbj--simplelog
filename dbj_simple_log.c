@@ -213,7 +213,7 @@ void dbj_simple_log_log(int level, const char *file, int line, const char *fmt, 
   if (!LOCAL.quiet) {
 
 	 va_list args;
-    char buf[16];
+	 char buf[16] = {0};
 	time_stamp_short( & buf);
 
 #ifdef DBJ_LOG_USE_COLOR
@@ -246,16 +246,24 @@ void dbj_simple_log_log(int level, const char *file, int line, const char *fmt, 
   if (LOCAL.fp) {
     va_list args;
 
-	char buf[32];
+	char buf[32] = {0};
 	time_stamp_long(& buf);
 
 	if (LOCAL.file_line_show)
     fprintf(LOCAL.fp, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
 	else
     fprintf(LOCAL.fp, "%s %-5s: ", buf, level_names[level]);
+	/*
+	ONE: we do not filter out the escape chars
+	*/
     va_start(args, fmt);
     vfprintf(LOCAL.fp, fmt, args);
     va_end(args);
+
+	/*
+	TWO: we do add a new line to each line written
+	but. we do not really want to do it in here ...?
+	*/
 	fprintf(LOCAL.fp, "\n");
 
 	DBJ_FERROR( LOCAL.fp );
