@@ -91,6 +91,7 @@ extern "C" {
 
 /////////////////////////////////////////////////////////////////////////////////////
 // primary usage is through these macros in the back
+// NOTE: these are active in both debug and release builds
 
 #define dbj_log_trace(...) dbj_simple_log_log(DBJ_LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
 #define dbj_log_debug(...) dbj_simple_log_log(DBJ_LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
@@ -99,22 +100,33 @@ extern "C" {
 #define dbj_log_error(...) dbj_simple_log_log(DBJ_LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define dbj_log_fatal(...) dbj_simple_log_log(DBJ_LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
-// and these macros in the front
+// and these macros are in the front
 // which are much more senisitive to name clash
-// unles you do not use your set
+// unles you do not use your own set
 #ifndef DBJ_USER_DEFINED_MACRO_NAMES
-	#define LOG_TRACE dbj_log_trace
-	#define LOG_DEBUG dbj_log_debug
-	#define LOG_INFO dbj_log_info
-	#define LOG_WARN dbj_log_warn
-	#define LOG_ERROR dbj_log_error
-	#define LOG_FATAL dbj_log_fatal
+
+#ifdef _DEBUG
+	#define LOG_TRACE(...) dbj_log_trace(__VA_ARGS__)
+	#define LOG_DEBUG(...) dbj_log_debug(__VA_ARGS__)
+	#define LOG_INFO(...) dbj_log_info(__VA_ARGS__)
+	#define LOG_WARN(...) dbj_log_warn(__VA_ARGS__)
+	#define LOG_ERROR(...) dbj_log_error(__VA_ARGS__)
+	#define LOG_FATAL(...) dbj_log_fatal(__VA_ARGS__)
+#else // ! _DEBUG
+	#define LOG_TRACE(...) 
+	#define LOG_DEBUG(...) 
+	#define LOG_INFO(...) 
+	#define LOG_WARN(...) 
+	#define LOG_ERROR(...) 
+	#define LOG_FATAL(...) 
+#endif // ! _DEBUG
+
 #endif // DBJ_USER_DEFINED_MACRO_NAMES
 
 /////////////////////////////////////////////////////////////////////////////////////
 ///  BIG FAT WARNING
 /// 
-/// 	do not enter escape code \n \v \f \t \r \b
+/// 	do not enter escape codes: \n \v \f \t \r \b
 /// 	into your strings
 /// 	if you do your file output will be strange
 /// 	asnd we will not stop you :)
@@ -125,7 +137,7 @@ extern "C" {
 /// predefined setups for both release and debug builds
 /// 
 #undef  DBJ_LOG_DEFAULT_FILE_SETUP
-#define DBJ_LOG_DEFAULT_SETUP DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
+#define DBJ_LOG_DEFAULT_FILE_SETUP DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
 
 #undef  DBJ_LOG_DEFAULT_WITH_CONSOLE
 #define DBJ_LOG_DEFAULT_WITH_CONSOLE DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT 
