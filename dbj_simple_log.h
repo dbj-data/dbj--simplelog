@@ -26,8 +26,8 @@
 
 #define DBJ_SIMPLE_LOG_MAJOR 3
 #define DBJ_SIMPLE_LOG_MINOR 5
-#define DBJ_SIMPLE_LOG_PATCH 0
-#define DBJ_SIMPLE_LOG_VERSION "3.5.0"
+#define DBJ_SIMPLE_LOG_PATCH 4
+#define DBJ_SIMPLE_LOG_VERSION "3.5.4"
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,7 +83,7 @@ extern "C" {
 // and these macros are in the front
 // which are much more senisitive to name clash
 // unles you do not use your own set
-#ifndef DBJ_USER_DEFINED_MACRO_NAMES
+#ifndef DBJ_SIMPLELOG_USER_DEFINED_MACRO_NAMES
 
 #ifdef _DEBUG
 	#define LOG_TRACE(...) dbj_log_trace(__VA_ARGS__)
@@ -144,7 +144,6 @@ extern "C" {
 		dbj_log_trace(" %s", "                                                              ");
 		dbj_log_trace(" %s", "--------------------------------------------------------------");
 		dbj_log_trace(" %s", "                                                              ");
-		dbj_log_trace(" Application: %s", app_full_path);
 		dbj_log_trace(" Log file: %s", current_log_file_path());
 		dbj_log_trace(" %s", "                                                              ");
 
