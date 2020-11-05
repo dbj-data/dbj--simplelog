@@ -10,39 +10,19 @@
 #define _POSIX_C_SOURCE 200809L
 #endif
 
-#undef  DBJ_PERROR 
-#ifdef _DEBUG
-#define DBJ_PERROR (perror(__FILE__ " # " _CRT_STRINGIZE(__LINE__))) 
-#else
-#define DBJ_PERROR
-#endif // _DEBUG
-
-#undef DBJ_FERROR
-#ifdef _DEBUG
-#define DBJ_FERROR( FP_) \
-do { \
-if (ferror(FP_) != 0) {\
-	DBJ_PERROR ;\
-	clearerr_s(FP_);\
-} \
-} while(0)
-#else
-#define DBJ_FERROR( FP_ )
-#endif // _DEBUG
-
-#include "lib/dbj_assert.h"
+#include <crtdbg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
+// default is coloured output
+#ifndef DBJ_LOG_USE_COLOR
 #define DBJ_LOG_USE_COLOR
-
-// by default
-// undef'd 
-// do it before including this header
-// 
+#endif
+// default
+#ifndef DBJ_SIMPLE_LOG_AUTO_FLUSH
 #define DBJ_SIMPLE_LOG_AUTO_FLUSH
-
+#endif
 
 #define DBJ_SIMPLE_LOG_MAJOR 3
 #define DBJ_SIMPLE_LOG_MINOR 5
@@ -129,7 +109,7 @@ extern "C" {
 /// 	do not enter escape codes: \n \v \f \t \r \b
 /// 	into your strings
 /// 	if you do your file output will be strange
-/// 	asnd we will not stop you :)
+/// 	and we will not stop you :)
 /// 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -153,7 +133,7 @@ extern "C" {
 	// with __argv[0] 
 	inline int dbj_simple_log_startup(const char* app_full_path)
 	{
-		DBJ_ASSERT(app_full_path);
+		_ASSERTE(app_full_path);
 
 		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, app_full_path))
 			return EXIT_FAILURE;
