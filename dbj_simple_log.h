@@ -4,6 +4,13 @@
 
 /* (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ */
 
+///  BIG FAT WARNING
+/// 
+/// 	do not enter escape codes: \n \v \f \t \r \b
+/// 	into your strings
+/// 	if you do your file output will be strange
+/// 	and we will not stop you :)
+
 #ifdef __STDC_ALLOC_LIB__
 #define __STDC_WANT_LIB_EXT2__ 1
 #else
@@ -55,17 +62,6 @@ extern "C" {
 	// all eventually goes through here
 	void dbj_simple_log_log(int /*level*/, const char* /*file*/, int /*line*/, const char* /*fmt*/, ...);
 
-	typedef enum  DBJ_LOG_SETUP_ENUM {
-		/* set to Multi Threaded */
-		DBJ_LOG_MT = 1,
-		/* if app full path is given  use it to obtain log gile name*/
-		DBJ_LOG_TO_APP_PATH = 2,
-		/* do not show file line on every log line */
-		DBJ_LOG_FILE_LINE_OFF = 4,
-		/* no console output, beware of no file and seting this in the same time */
-		DBJ_LOG_NO_CONSOLE = 8
-	} DBJ_LOG_SETUP_ENUM;
-
 	bool dbj_log_setup
 	(int setup /* DBJ_LOG_SETUP_ENUM */, const char* app_full_path);
 
@@ -104,14 +100,17 @@ extern "C" {
 #endif // DBJ_USER_DEFINED_MACRO_NAMES
 
 /////////////////////////////////////////////////////////////////////////////////////
-///  BIG FAT WARNING
-/// 
-/// 	do not enter escape codes: \n \v \f \t \r \b
-/// 	into your strings
-/// 	if you do your file output will be strange
-/// 	and we will not stop you :)
-/// 
-/////////////////////////////////////////////////////////////////////////////////////
+
+	typedef enum  {
+		/* set to Multi Threaded */
+		DBJ_LOG_MT = 1,
+		/* if app full path is given  use it to obtain log file name*/
+		DBJ_LOG_TO_APP_PATH = 2,
+		/* do not show file line on every log line */
+		DBJ_LOG_FILE_LINE_OFF = 4,
+		/* no console output, beware of no file and seting this in the same time */
+		DBJ_LOG_NO_CONSOLE = 8
+	} DBJ_LOG_SETUP_ENUM;
 
 /////////////////////////////////////////////////////////////////////////////////////
 /// predefined setups for both release and debug builds
@@ -120,17 +119,18 @@ extern "C" {
 #define DBJ_LOG_DEFAULT_FILE_SETUP DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
 
 #undef  DBJ_LOG_DEFAULT_WITH_CONSOLE
-#define DBJ_LOG_DEFAULT_WITH_CONSOLE DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT 
+#define DBJ_LOG_DEFAULT_WITH_CONSOLE DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT 
 
-/// defaul is log to file, MT resilient, no console
-/// unless you define your combination that is
+/// default is log to file, MT resilient, no console
+/// unless you define your combination differently that is
 #ifndef  DBJ_LOG_DEFAULT_SETUP
 #define  DBJ_LOG_DEFAULT_SETUP DBJ_LOG_DEFAULT_FILE_SETUP
 #endif // ! DBJ_LOG_DEFAULT_SETUP
-/////////////////////////////////////////////////////////////////////////////////////
 
 	// make sure you call this once upon app startup
 	// with __argv[0] 
+	// make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
+	// you want before calling this function
 	inline int dbj_simple_log_startup(const char* app_full_path)
 	{
 		_ASSERTE(app_full_path);
@@ -144,6 +144,7 @@ extern "C" {
 		dbj_log_trace(" %s", "                                                              ");
 		dbj_log_trace(" %s", "--------------------------------------------------------------");
 		dbj_log_trace(" %s", "                                                              ");
+		if ( (DBJ_LOG_DEFAULT_SETUP) & DBJ_LOG_TO_APP_PATH )
 		dbj_log_trace(" Log file: %s", current_log_file_path());
 		dbj_log_trace(" %s", "                                                              ");
 

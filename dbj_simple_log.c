@@ -334,20 +334,21 @@ static void  default_protector_function(bool lock)
 	}
 }
 
+/*
+if in need of some kindergarten enum masks handling refresher please look here
+https://stackoverflow.com/a/12255836/10870835
+*/
 #undef  DBJ_LOG_IS_BIT
 #define DBJ_LOG_IS_BIT(S_, B_) (((int)S_ & (int)B_) != 0)
 
 bool dbj_log_setup
-(int setup /* DBJ_LOG_SETUP_ENUM */, const char* app_full_path)
+( DBJ_LOG_SETUP_ENUM setup , const char* app_full_path)
 {
 	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_FILE_LINE_OFF)) {
 		log_set_fileline(false);
 	}
 	else
 		log_set_fileline(true);
-
-	// someday soon, windows console will not need this
-	enable_vt_mode();
 
 	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_MT)) {
 		log_set_lock(default_protector_function);
@@ -365,7 +366,13 @@ bool dbj_log_setup
 		log_set_quiet(false);
 
 	// caller does not want any kind of local log file
-	if (app_full_path == NULL) return true;
+	if (
+		(!DBJ_LOG_IS_BIT(setup, DBJ_LOG_TO_APP_PATH))
+		|| (app_full_path == NULL)
+	)
+	{
+		return 	enable_vt_mode();
+	}
 
 	// make it once
 	static dbj_fhandle log_file_handle_shared_ ;
@@ -392,11 +399,16 @@ bool dbj_log_setup
 
 #undef DBJ_LOG_IS_BIT
 
+// this might assert on debug builds
+// make sure it does not, on release builds
 void dbj_log_finalize(void)
 {
 	// make sure setup was called 
 	dbj_fhandle * fh = log_get_user_data();
-	DBJ_ASSERT(fh);
+	
+	// log file was not made
+	// the session was in a console mode
+	if (fh == NULL) return;
 
 	FILE* fp_ = dbj_fhandle_log_file_ptr(NULL);
 	DBJ_ASSERT(fp_);
