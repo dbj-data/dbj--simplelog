@@ -30,14 +30,14 @@
 #include "dbj_fhandle.h"
 #include "dbj_simple_log.h"
 
-// pch.h is implicitly included
-// and this is in there
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <stdarg.h>
-//#include <string.h>
-//#include <time.h>
-//#include <stdbool.h>
+ // pch.h is implicitly included
+ // and this is in there
+ //#include <stdio.h>
+ //#include <stdlib.h>
+ //#include <stdarg.h>
+ //#include <string.h>
+ //#include <time.h>
+ //#include <stdbool.h>
 
 #ifndef errno_t
 typedef int errno_t;
@@ -45,7 +45,7 @@ typedef int errno_t;
 
 /*
 currently not public API
-making it so is of a questionable value as it inevitably 
+making it so is of a questionable value as it inevitably
 will complicate the public API
 */
 
@@ -62,7 +62,7 @@ typedef void (*log_lock_function_ptr)(bool /*lock*/);
 // default uses win32 critial section
 // implemented in here
 // user_data is unused 
-void  default_protector_function( bool /*lock*/);
+void  default_protector_function(bool /*lock*/);
 
 // works but currently unused
 // primary use is to keep mutex or whatever else 
@@ -83,14 +83,14 @@ void log_set_quiet(bool);
 void log_set_fileline(bool);
 
 static struct {
-  void *user_data;
-  log_lock_function_ptr lock;
-  FILE *fp;
-  int level;
-  int quiet;
-  bool file_line_show;
-  char log_f_name[BUFSIZ];
-} LOCAL = { 0, 0, 0, DBJ_LOG_TRACE, 0, true, '\0'} ;
+	void* user_data;
+	log_lock_function_ptr lock;
+	FILE* fp;
+	int level;
+	int quiet;
+	bool file_line_show;
+	char log_f_name[BUFSIZ];
+} LOCAL = { 0, 0, 0, DBJ_LOG_TRACE, 0, true, '\0' };
 
 const char* const current_log_file_path() {
 	return LOCAL.log_f_name;
@@ -103,7 +103,7 @@ static const char* set_log_file_name(const char new_name[BUFSIZ]) {
 	return LOCAL.log_f_name;
 }
 
-static const char *level_names[] = {
+static const char* level_names[] = {
   "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
 };
 
@@ -119,59 +119,59 @@ static const char *level_names[] = {
 #define VT100_LIGHT_RED VT100_ESC "31m"
 #define VT100_LIGHT_MAGENTA VT100_ESC "35m"
 
-static const char *level_colors[] = {
-  /* TRACE */  VT100_LIGHT_BLUE, 
-  /* DEBUG */ VT100_LIGHT_CYAN,
-  /* INFO */ VT100_LIGHT_GREEN,
-  /* WARN */ VT100_LIGHT_YELLOW,
-  /* ERROR */ VT100_LIGHT_RED,
-  /* FATAL */ VT100_LIGHT_MAGENTA
+static const char* level_colors[] = {
+	/* TRACE */  VT100_LIGHT_BLUE,
+	/* DEBUG */ VT100_LIGHT_CYAN,
+	/* INFO */ VT100_LIGHT_GREEN,
+	/* WARN */ VT100_LIGHT_YELLOW,
+	/* ERROR */ VT100_LIGHT_RED,
+	/* FATAL */ VT100_LIGHT_MAGENTA
 };
 #endif
 
 
-static void lock(void)   {
-  if (LOCAL.lock) {
-    LOCAL.lock(true);
-  }
+static void lock(void) {
+	if (LOCAL.lock) {
+		LOCAL.lock(true);
+	}
 }
 
 
 static void unlock(void) {
-  if (LOCAL.lock) {
-    LOCAL.lock(false);
-  }
+	if (LOCAL.lock) {
+		LOCAL.lock(false);
+	}
 }
 
-static void log_set_fileline(bool show) 
+static void log_set_fileline(bool show)
 {
-LOCAL.file_line_show = show;
+	LOCAL.file_line_show = show;
 }
 
-static void log_set_user_data(void *user_data) {
-  LOCAL.user_data = user_data;
+static void log_set_user_data(void* user_data) {
+	LOCAL.user_data = user_data;
 }
 
-static void * log_get_user_data(void) {
+static void* log_get_user_data(void) {
 	return LOCAL.user_data;
 }
 
 
 static void log_set_lock(log_lock_function_ptr fn) {
-  LOCAL.lock = fn;
+	LOCAL.lock = fn;
 }
 
-static void log_set_fp(FILE *fp, const char * file_path_name ) {
+static void log_set_fp(FILE* fp, const char* file_path_name) {
 
-	DBJ_ASSERT( fp );
-  LOCAL.fp = fp;
+	DBJ_ASSERT(fp);
+	LOCAL.fp = fp;
 
-  if (!file_path_name) {
-	  /* name not given */
-	  LOCAL.log_f_name[0] = '\0';
-	  return;
-  }
-  set_log_file_name(file_path_name );
+	if (!file_path_name) {
+		/* name not given */
+		LOCAL.log_f_name[0] = '\0';
+		return;
+	}
+	set_log_file_name(file_path_name);
 }
 
 // not used currently --> void log_set_level(int level) {  LOCAL.level = level; }
@@ -182,102 +182,102 @@ static void log_set_quiet(bool enable) {
 	LOCAL.quiet = enable;
 }
 
-inline void time_stamp_short( char (*buf)[16] )
+inline void time_stamp_short(char(*buf)[16])
 {
 	time_t t = time(NULL);
 	struct tm lt;
 	errno_t errno_rez = localtime_s(&lt, &t);
-	DBJ_ASSERT( errno_rez == 0 );
+	DBJ_ASSERT(errno_rez == 0);
 	(*buf)[strftime((*buf), sizeof(*buf), "%H:%M:%S", &lt)] = '\0';
 }
 
-inline void time_stamp_long( char (*buf)[32] )
+inline void time_stamp_long(char(*buf)[32])
 {
 	time_t t = time(NULL);
 	struct tm lt;
 	errno_t errno_rez = localtime_s(&lt, &t);
-	DBJ_ASSERT( errno_rez == 0 );
+	DBJ_ASSERT(errno_rez == 0);
 	(*buf)[strftime((*buf), sizeof(*buf), "%Y-%m-%d %H:%M:%S", &lt)] = '\0';
 }
 
-void dbj_simple_log_log(int level, const char *file, int line, const char *fmt, ...) 
+void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, ...)
 {
 	/* Acquire lock */
 	lock();
-	
+
 	// not used currently --> 	if (level < LOCAL.level)   goto exit;
 
 	// errno_t errno_rez = 0; 
 
   /* Log to console using stderr */
-  if (!LOCAL.quiet) {
+	if (!LOCAL.quiet) {
 
-	 va_list args;
-	 char buf[16] = {0};
-	time_stamp_short( & buf);
+		va_list args;
+		char buf[16] = { 0 };
+		time_stamp_short(&buf);
 
 #ifdef DBJ_LOG_USE_COLOR
 
-	if (LOCAL.file_line_show) {
-		fprintf(
-			stderr, "%s %s%-5s" VT100_RESET VT100_LIGHT_GRAY "%s : %d : "VT100_RESET ,
-			buf, level_colors[level], level_names[level], file, line);
-	}
-	else {
-		fprintf(
-			stderr, "%s %s%-5s "VT100_RESET,
-			buf, level_colors[level], level_names[level] );
-	}
+		if (LOCAL.file_line_show) {
+			fprintf(
+				stderr, "%s %s%-5s" VT100_RESET VT100_LIGHT_GRAY "%s : %d : "VT100_RESET,
+				buf, level_colors[level], level_names[level], file, line);
+		}
+		else {
+			fprintf(
+				stderr, "%s %s%-5s "VT100_RESET,
+				buf, level_colors[level], level_names[level]);
+		}
 #else
-	if ( LOCAL.file_line_show)
-    fprintf(stderr, "%s %-5s %s : %d : ", buf, level_names[level], file, line);
-	else
-	fprintf(stderr, "%s %-5s ", buf, level_names[level]);
+		if (LOCAL.file_line_show)
+			fprintf(stderr, "%s %-5s %s : %d : ", buf, level_names[level], file, line);
+		else
+			fprintf(stderr, "%s %-5s ", buf, level_names[level]);
 #endif
 
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-    fprintf(stderr, "\n");
+		va_start(args, fmt);
+		vfprintf(stderr, fmt, args);
+		va_end(args);
+		fprintf(stderr, "\n");
 
-  } // log not quiet
+	} // log not quiet
 
-  /* Log to file */
-  if (LOCAL.fp) {
-    va_list args;
+	/* Log to file */
+	if (LOCAL.fp) {
+		va_list args;
 
-	char buf[32] = {0};
-	time_stamp_long(& buf);
+		char buf[32] = { 0 };
+		time_stamp_long(&buf);
 
-	if (LOCAL.file_line_show)
-    fprintf(LOCAL.fp, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
-	else
-    fprintf(LOCAL.fp, "%s %-5s: ", buf, level_names[level]);
-	/*
-	ONE: we do not filter out the escape chars
-	*/
-    va_start(args, fmt);
-    vfprintf(LOCAL.fp, fmt, args);
-    va_end(args);
+		if (LOCAL.file_line_show)
+			fprintf(LOCAL.fp, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
+		else
+			fprintf(LOCAL.fp, "%s %-5s: ", buf, level_names[level]);
+		/*
+		ONE: we do not filter out the escape chars
+		*/
+		va_start(args, fmt);
+		vfprintf(LOCAL.fp, fmt, args);
+		va_end(args);
 
-	/*
-	TWO: we do add a new line to each line written
-	but. we do not really want to do it in here ...?
-	*/
-	fprintf(LOCAL.fp, "\n");
+		/*
+		TWO: we do add a new line to each line written
+		but. we do not really want to do it in here ...?
+		*/
+		fprintf(LOCAL.fp, "\n");
 
-	DBJ_FERROR( LOCAL.fp );
-	
+		DBJ_FERROR(LOCAL.fp);
+
 #ifdef DBJ_SIMPLE_LOG_AUTO_FLUSH
-	DBJ_ASSERT( LOCAL.fp);
-	DBJ_FERROR( LOCAL.fp);
-	(void)_flushall();
+		DBJ_ASSERT(LOCAL.fp);
+		DBJ_FERROR(LOCAL.fp);
+		(void)_flushall();
 #endif // DBJ_SIMPLE_LOG_AUTO_FLUSH
 
-  }
+	}
 
-  /* Release lock */
-  unlock();
+	/* Release lock */
+	unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -289,26 +289,26 @@ void dbj_simple_log_log(int level, const char *file, int line, const char *fmt, 
 static bool enable_vt_mode()
 {
 	// Set output mode to handle virtual terminal sequences
-		HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-		if (hOut == INVALID_HANDLE_VALUE)
-		{
-			return false;
-		}
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (hOut == INVALID_HANDLE_VALUE)
+	{
+		return false;
+	}
 
-		// this will fail if this app output is 
-		// redirected to a file
-		DWORD dwMode = 0;
-		if (!GetConsoleMode(hOut, &dwMode))
-		{
-			return false;
-		}
+	// this will fail if this app output is 
+	// redirected to a file
+	DWORD dwMode = 0;
+	if (!GetConsoleMode(hOut, &dwMode))
+	{
+		return false;
+	}
 
-		dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-		if (!SetConsoleMode(hOut, dwMode))
-		{
-			return false;
-		}
-		return true;
+	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+	if (!SetConsoleMode(hOut, dwMode))
+	{
+		return false;
+	}
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -321,7 +321,7 @@ and entering/deleting it only once ... why not measuring it?
 static void  default_protector_function(bool lock)
 {
 	// Think: this is one per process
-	static CRITICAL_SECTION   CS_ ;
+	static CRITICAL_SECTION   CS_;
 
 	if (lock)
 	{
@@ -342,7 +342,7 @@ https://stackoverflow.com/a/12255836/10870835
 #define DBJ_LOG_IS_BIT(S_, B_) (((int)S_ & (int)B_) != 0)
 
 bool dbj_log_setup
-( DBJ_LOG_SETUP_ENUM setup , const char* app_full_path)
+(DBJ_LOG_SETUP_ENUM setup, const char* app_full_path)
 {
 	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_FILE_LINE_OFF)) {
 		log_set_fileline(false);
@@ -369,13 +369,13 @@ bool dbj_log_setup
 	if (
 		(!DBJ_LOG_IS_BIT(setup, DBJ_LOG_TO_APP_PATH))
 		|| (app_full_path == NULL)
-	)
+		)
 	{
 		return 	enable_vt_mode();
 	}
 
 	// make it once
-	static dbj_fhandle log_file_handle_shared_ ;
+	static dbj_fhandle log_file_handle_shared_;
 
 	if (dbj_fhandle_is_empty(&log_file_handle_shared_))
 	{
@@ -392,7 +392,7 @@ bool dbj_log_setup
 	);
 
 	// we keep it in user_data void * so we decouple from dbj_fhandle
-	log_set_user_data( &log_file_handle_shared_);
+	log_set_user_data(&log_file_handle_shared_);
 
 	return true;
 } // dbj_log_setup
@@ -401,21 +401,25 @@ bool dbj_log_setup
 
 // this might assert on debug builds
 // make sure it does not, on release builds
-void dbj_log_finalize(void)
+int dbj_log_finalize(void)
 {
 	// make sure setup was called 
-	dbj_fhandle * fh = log_get_user_data();
-	
+	dbj_fhandle* fh = log_get_user_data();
+
 	// log file was not made
 	// the session was in a console mode
-	if (fh == NULL) return;
+	if (fh == NULL) return EXIT_SUCCESS;
 
 	FILE* fp_ = dbj_fhandle_log_file_ptr(NULL);
 	DBJ_ASSERT(fp_);
 	DBJ_FERROR(fp_);
 	(void)_flushall();
 	// make sure it is fclose, not close
-	if (fp_) { fclose(fp_); fp_ = NULL ; }
+	if (fp_) {
+		fclose(fp_); fp_ = NULL;
+		return EXIT_SUCCESS;
+	}
+	return EXIT_FAILURE;
 }
 
 
@@ -482,7 +486,7 @@ static errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 	}
 
 	struct _stat64i32 sb;
-	
+
 	rez = _fstat(self->file_descriptor, &sb);
 	if (rez != 0) {
 		DBJ_PERROR;
@@ -536,4 +540,53 @@ static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 	return fp_;
 }
 
+/*
+ --------------------------------------------------------------------------------------
+initialization and deinitialization encapsulated here
+*/
 
+#if defined(_WIN64)
+#define DBJ_LOG_SYMBOL_PREFIX
+#else
+#define DBJ_LOG_SYMBOL_PREFIX "_"
+#endif
+
+#undef DBJ_LOG_INITIALIZER
+#pragma section(".CRT$XCU", read) 
+#define DBJ_LOG_INITIALIZER(f)                                                  \
+static void __cdecl f(void);                                                 \
+  __pragma(comment(linker, "/include:" DBJ_LOG_SYMBOL_PREFIX #f "_"));          \
+  __declspec(allocate(".CRT$XCU")) void(__cdecl * f##_)(void) =  f; \
+   static void __cdecl f(void)
+
+// for clang on win aka clang-cl.exe do another version
+#ifdef __clang__
+#undef DBJ_LOG_INITIALIZER
+#define DBJ_LOG_INITIALIZER(f)        \
+  static void f(void) __attribute__((constructor));  \
+  static void f(void)
+#endif // __clang__
+
+DBJ_LOG_INITIALIZER(dbj_simple_log_before)
+{
+	// is __argv available for windows desktop apps?
+	_ASSERTE(__argv);
+	_ASSERTE(EXIT_SUCCESS == dbj_simple_log_startup(__argv[0]));
+
+}
+
+// for clang-cl we also do enjoy this
+// BUT! Only if runtime lib is static lib!
+#ifdef __clang__
+
+extern "C"
+__attribute__((destructor))
+inline void dbj_simple_log_after(void) {
+
+	_ASSERTE(dbj_log_finalize() == EXIT_SUCCESS);
+
+}
+#endif
+
+#undef DBJ_C_FUNC
+#undef DBJ_LOG_SYMBOL_PREFIX
