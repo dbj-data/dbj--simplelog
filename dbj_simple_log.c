@@ -28,7 +28,7 @@
 #endif
 
 #include "dbj_fhandle.h"
-#include "dbj_simple_log.h"
+#include "dbj_simple_log_host.h"
 
  // pch.h is implicitly included
  // and this is in there
@@ -540,53 +540,4 @@ static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 	return fp_;
 }
 
-/*
- --------------------------------------------------------------------------------------
-initialization and deinitialization encapsulated here
-*/
 
-#if defined(_WIN64)
-#define DBJ_LOG_SYMBOL_PREFIX
-#else
-#define DBJ_LOG_SYMBOL_PREFIX "_"
-#endif
-
-#undef DBJ_LOG_INITIALIZER
-#pragma section(".CRT$XCU", read) 
-#define DBJ_LOG_INITIALIZER(f)                                                  \
-static void __cdecl f(void);                                                 \
-  __pragma(comment(linker, "/include:" DBJ_LOG_SYMBOL_PREFIX #f "_"));          \
-  __declspec(allocate(".CRT$XCU")) void(__cdecl * f##_)(void) =  f; \
-   static void __cdecl f(void)
-
-// for clang on win aka clang-cl.exe do another version
-#ifdef __clang__
-#undef DBJ_LOG_INITIALIZER
-#define DBJ_LOG_INITIALIZER(f)        \
-  static void f(void) __attribute__((constructor));  \
-  static void f(void)
-#endif // __clang__
-
-DBJ_LOG_INITIALIZER(dbj_simple_log_before)
-{
-	// is __argv available for windows desktop apps?
-	_ASSERTE(__argv);
-	_ASSERTE(EXIT_SUCCESS == dbj_simple_log_startup(__argv[0]));
-
-}
-
-// for clang-cl we also do enjoy this
-// BUT! Only if runtime lib is static lib!
-#ifdef __clang__
-
-extern "C"
-__attribute__((destructor))
-inline void dbj_simple_log_after(void) {
-
-	_ASSERTE(dbj_log_finalize() == EXIT_SUCCESS);
-
-}
-#endif
-
-#undef DBJ_C_FUNC
-#undef DBJ_LOG_SYMBOL_PREFIX
