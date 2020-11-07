@@ -27,9 +27,6 @@
     <ClInclude Include="..\dbj_simple_log.h">
       <Filter>lib_single_header</Filter>
     </ClInclude>
-    <ClInclude Include="dbj_assert.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">

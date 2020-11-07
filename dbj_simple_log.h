@@ -48,6 +48,7 @@ extern "C" {
 	} DBJ_LOG_LEVELS_ENUM;
 #endif // DBJ_LOG_LEVELS_ENUM_DEFINED
 
+
 	/*	for users to see*/
 	const char* const current_log_file_path();
 
@@ -57,8 +58,7 @@ extern "C" {
 	// all eventually goes through here
 	void dbj_simple_log_log(int /*level*/, const char* /*file*/, int /*line*/, const char* /*fmt*/, ...);
 
-	bool dbj_log_setup
-	(int setup /* DBJ_LOG_SETUP_ENUM */, const char* app_full_path);
+	bool dbj_log_setup (int , const char*  );
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	// primary usage is through these macros in the back

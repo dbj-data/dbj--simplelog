@@ -29,16 +29,17 @@ extern "C" {
 	*/
 	int dbj_log_finalize(void);
 
-typedef enum {
-	/* set to Multi Threaded */
-	DBJ_LOG_MT = 1,
-	/* if app full path is given  use it to obtain log file name*/
-	DBJ_LOG_TO_APP_PATH = 2,
-	/* do not show file line on every log line */
-	DBJ_LOG_FILE_LINE_OFF = 4,
-	/* no console output, beware of no file and seting this in the same time */
-	DBJ_LOG_NO_CONSOLE = 8
-} DBJ_LOG_SETUP_ENUM;
+
+	typedef enum DBJ_LOG_SETUP_ENUM {
+		/* set to Multi Threaded */
+		DBJ_LOG_MT = 1,
+		/* if app full path is given  use it to obtain log file name*/
+		DBJ_LOG_TO_APP_PATH = 2,
+		/* do not show file line on every log line */
+		DBJ_LOG_FILE_LINE_OFF = 4,
+		/* no console output, beware of no file and seting this in the same time */
+		DBJ_LOG_NO_CONSOLE = 8
+	} DBJ_LOG_SETUP_ENUM;
 
 /////////////////////////////////////////////////////////////////////////////////////
 /// predefined setups for both release and debug builds
@@ -61,10 +62,18 @@ typedef enum {
 	// you want before calling this function
 inline int dbj_simple_log_startup(const char* app_full_path)
 {
-	_ASSERTE(app_full_path);
+	if ((DBJ_LOG_DEFAULT_SETUP) & DBJ_LOG_TO_APP_PATH) {
+		if (!app_full_path) return EXIT_FAILURE;
+	}
 
-	if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, app_full_path))
-		return EXIT_FAILURE;
+	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH) {
+		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, app_full_path))
+			return EXIT_FAILURE;
+	}
+	else {
+		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, NULL ))
+			return EXIT_FAILURE;
+	}
 
 	// this will thus go into which ever log target you have set
 	// log file or console or both.
@@ -87,57 +96,34 @@ inline int dbj_simple_log_startup(const char* app_full_path)
 	return EXIT_SUCCESS;
 }
 
-/* --------------------------------------------------------------------------------------*/
-#ifdef __cplusplus
-} // extern "C" 
-#endif // __cplusplus
-
-#if defined(_WIN32)
-
 /*
  --------------------------------------------------------------------------------------
-initialization and deinitialization encapsulated here
-
-NOTE 4 Student: this must be outside of extern "C" block, why ;)
+clang/gnuc C initialization and deinitialization encapsulated here
+for clang-cl we also do enjoy this
+BUT! Only if runtime lib is static lib!
 */
-
-#if defined(_WIN64)
-#define DBJ_LOG_SYMBOL_PREFIX
-#else
-#define DBJ_LOG_SYMBOL_PREFIX "_"
-#endif
-
-#undef DBJ_LOG_INITIALIZER
-#pragma section(".CRT$XCU", read) 
-#define DBJ_LOG_INITIALIZER(f)                                                  \
-inline void __cdecl f(void);                                                 \
-  __pragma(comment(linker, "/include:" DBJ_LOG_SYMBOL_PREFIX #f "_"));          \
-  __declspec(allocate(".CRT$XCU")) void(__cdecl * f##_)(void) =  f; \
-   inline void __cdecl f(void)
 
 // for clang on win aka clang-cl.exe do another version
 #ifdef __clang__
-#undef DBJ_LOG_INITIALIZER
-#define DBJ_LOG_INITIALIZER(f)        \
-  inline void f(void) __attribute__((constructor));  \
-  inline void f(void)
-#endif // __clang__
+/*
+ EXAMPLE
 
-DBJ_LOG_INITIALIZER(dbj_simple_log_before)
+__attribute__((constructor)) void dbj_log_initializator (dbj_simple_log_before)
 {
-	static bool been_here_ = false;
-
-	if (been_here_) {
 		// is __argv available for windows desktop apps?
 		_ASSERTE(__argv);
 		_ASSERTE(EXIT_SUCCESS == dbj_simple_log_startup(__argv[0]));
-		been_here_ = true;
-	}
 }
 
-// for clang-cl we also do enjoy this
-// BUT! Only if runtime lib is static lib!
+*/
+#else // ! __clang__
+#pragma message("please make sure dbj_simple_log_startup() is called before app exit!")
+#endif // ! __clang__
+
+
 #ifdef __clang__
+/*
+EXAMPLE
 
 extern "C"
 __attribute__((destructor))
@@ -146,15 +132,15 @@ inline void dbj_simple_log_after(void) {
 	_ASSERTE(dbj_log_finalize() == EXIT_SUCCESS);
 
 }
+*/
 #else // ! __clang__
 #pragma message("please make sure dbj_log_finalize() is called before app exit!")
 #endif // ! __clang__
 
-
-#undef DBJ_C_FUNC
-#undef DBJ_LOG_SYMBOL_PREFIX
-
-#endif // defined(_WIN32)
+/* --------------------------------------------------------------------------------------*/
+#ifdef __cplusplus
+} // extern "C" 
+#endif // __cplusplus
 
 
 #endif // DBJ_SIMPLE_LOG_HOST_INC

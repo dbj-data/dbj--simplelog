@@ -342,19 +342,19 @@ https://stackoverflow.com/a/12255836/10870835
 #define DBJ_LOG_IS_BIT(S_, B_) (((int)S_ & (int)B_) != 0)
 
 bool dbj_log_setup
-(DBJ_LOG_SETUP_ENUM setup, const char* app_full_path)
+(/*DBJ_LOG_SETUP_ENUM*/ int setup, const char* app_full_path)
 {
-	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_FILE_LINE_OFF)) {
+	if (setup & DBJ_LOG_FILE_LINE_OFF ) {
 		log_set_fileline(false);
 	}
 	else
 		log_set_fileline(true);
 
-	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_MT)) {
+	if ( setup & DBJ_LOG_MT ) {
 		log_set_lock(default_protector_function);
 	}
 
-	if (DBJ_LOG_IS_BIT(setup, DBJ_LOG_NO_CONSOLE)) {
+	if ( setup & DBJ_LOG_NO_CONSOLE) {
 		log_set_quiet(true);
 #ifdef _DEBUG
 		if (app_full_path == NULL) {
@@ -367,7 +367,7 @@ bool dbj_log_setup
 
 	// caller does not want any kind of local log file
 	if (
-		(!DBJ_LOG_IS_BIT(setup, DBJ_LOG_TO_APP_PATH))
+		(! (setup & DBJ_LOG_TO_APP_PATH) )
 		|| (app_full_path == NULL)
 		)
 	{
