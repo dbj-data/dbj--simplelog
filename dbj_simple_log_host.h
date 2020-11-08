@@ -38,7 +38,9 @@ extern "C" {
 		/* do not show file line on every log line */
 		DBJ_LOG_FILE_LINE_OFF = 4,
 		/* no console output, beware of no file and seting this in the same time */
-		DBJ_LOG_NO_CONSOLE = 8
+		DBJ_LOG_NO_CONSOLE = 8,
+		/* defualt is time  only */
+		DBJ_LOG_FULL_TIMESTAMP = 16
 	} DBJ_LOG_SETUP_ENUM;
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -56,55 +58,26 @@ extern "C" {
 #define  DBJ_LOG_DEFAULT_SETUP DBJ_LOG_DEFAULT_FILE_SETUP
 #endif // ! DBJ_LOG_DEFAULT_SETUP
 
-	// make sure you call this once upon app startup
-	// with __argv[0] 
-	// make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
-	// you want before calling this function
-inline int dbj_simple_log_startup(const char* app_full_path)
-{
-	if ((DBJ_LOG_DEFAULT_SETUP) & DBJ_LOG_TO_APP_PATH) {
-		if (!app_full_path) return EXIT_FAILURE;
-	}
+// make sure you call this once upon app startup
+// make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
+// you want before calling this function
+	int dbj_simple_log_startup(const char* /*app_full_path*/);
 
-	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH) {
-		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, app_full_path))
-			return EXIT_FAILURE;
-	}
-	else {
-		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, NULL ))
-			return EXIT_FAILURE;
-	}
+/* --------------------------------------------------------------------------------------*/
+#ifdef __cplusplus
+} // extern "C" 
+#endif // __cplusplus
 
-	// this will thus go into which ever log target you have set
-	// log file or console or both.
-
-	dbj_log_trace(" %s", "                                                              ");
-	dbj_log_trace(" %s", "--------------------------------------------------------------");
-	dbj_log_trace(" %s", "                                                              ");
-	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH)
-		dbj_log_trace(" Log file: %s", current_log_file_path());
-	dbj_log_trace(" %s", "                                                              ");
-
-#ifdef DBJ_LOG_TESTING
-	dbj_log_trace("Log  TRACE");
-	dbj_log_debug("Log  DEBUG");
-	dbj_log_info("Log  INFO");
-	dbj_log_warn("Log  WARN");
-	dbj_log_error("Log  ERROR");
-	dbj_log_fatal("Log  FATAL");
-#endif
-	return EXIT_SUCCESS;
-}
-
+#ifndef __cplusplus
+#ifdef __clang__
 /*
  --------------------------------------------------------------------------------------
 clang/gnuc C initialization and deinitialization encapsulated here
-for clang-cl we also do enjoy this
-BUT! Only if runtime lib is static lib!
+
+for clang on win aka clang-cl.exe
+destructor works only if runtime lib is static lib!
 */
 
-// for clang on win aka clang-cl.exe do another version
-#ifdef __clang__
 /*
  EXAMPLE
 
@@ -136,11 +109,6 @@ inline void dbj_simple_log_after(void) {
 #else // ! __clang__
 #pragma message("please make sure dbj_log_finalize() is called before app exit!")
 #endif // ! __clang__
-
-/* --------------------------------------------------------------------------------------*/
-#ifdef __cplusplus
-} // extern "C" 
-#endif // __cplusplus
-
+#endif // !__cplusplus
 
 #endif // DBJ_SIMPLE_LOG_HOST_INC

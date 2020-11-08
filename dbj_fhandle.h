@@ -1,6 +1,7 @@
 #pragma once
 #ifndef DBJ_FHANDLE_INC
 #define DBJ_FHANDLE_INC
+
 /*
    log file handling
 
@@ -20,18 +21,18 @@
 #include <stdbool.h>
 
 #undef DBJ_ASSERT
+#ifdef _DEBUG
 #define DBJ_ASSERT _ASSERTE
+#else
+#define	DBJ_ASSERT(X_) ((void)(X_))
+#endif
 
-// wchar version
-// In release builds too, be carefull!
-#ifndef DBJ_VERIFY
-#define DBJ_VERIFY(expr, msg) \
-(void)(                                                                                     \
-    (!!(expr)) ||                                                                           \
-    (1 != _CrtDbgReportW(_CRT_ASSERT, _CRT_WIDE(__FILE__), __LINE__, NULL, L"%ls", msg)) || \
-    (_CrtDbgBreak(), 0)                                                                     \
-)
-#endif // ! DBJ_VERIFY
+//
+// CAUTION! DBJ_VERIFY affects release builds too
+//  _ASSERT_AND_INVOKE_WATSON asserts in debug builds
+//  in release builds it invokes watson
+#undef DBJ_VERIFY
+#define DBJ_VERIFY(x) _ASSERT_AND_INVOKE_WATSON(x)
 
 // Here's a better C version (from Google's Chromium project):
 #undef DBJ_COUNT_OF
@@ -58,8 +59,12 @@ if (ferror(FP_) != 0) {\
 #define DBJ_FERROR( FP_ )
 #endif // _DEBUG
 
+// user definable
+#ifndef DBJ_FHANDLE_SUFFIX
 #define DBJ_FHANDLE_SUFFIX "log"
+#endif
 
+// posix == 512
 #ifndef BUFSIZ
 #define BUFSIZ 512
 #endif // BUFSIZ
@@ -129,7 +134,7 @@ extern "C" {
 	inline bool dbj_fhandle_is_empty(dbj_fhandle* self)
 	{
 		DBJ_ASSERT(self);
-		return (self->name == NULL) || (self->name[0] == '\0');
+		return /*(self->name) ||*/ (self->name[0] == '\0');
 	}
 
 #ifdef __cplusplus

@@ -89,8 +89,18 @@ static struct {
 	int level;
 	int quiet;
 	bool file_line_show;
+	/* default is false, that means: time only */
+	bool full_time_stamp;
 	char log_f_name[BUFSIZ];
-} LOCAL = { 0, 0, 0, DBJ_LOG_TRACE, 0, true, '\0' };
+} LOCAL = { 
+	.user_data = 0, 
+	.lock = 0, 
+	.fp = 0, 
+	.level = DBJ_LOG_TRACE, 
+	.quiet = 0, 
+	.file_line_show = false, 
+	.full_time_stamp = false,
+	 .log_f_name = {'\0'} };
 
 const char* const current_log_file_path() {
 	return LOCAL.log_f_name;
@@ -182,7 +192,7 @@ static void log_set_quiet(bool enable) {
 	LOCAL.quiet = enable;
 }
 
-inline void time_stamp_short(char(*buf)[16])
+static void time_stamp_short(char(*buf)[32])
 {
 	time_t t = time(NULL);
 	struct tm lt;
@@ -191,7 +201,7 @@ inline void time_stamp_short(char(*buf)[16])
 	(*buf)[strftime((*buf), sizeof(*buf), "%H:%M:%S", &lt)] = '\0';
 }
 
-inline void time_stamp_long(char(*buf)[32])
+static void time_stamp_long(char(*buf)[32])
 {
 	time_t t = time(NULL);
 	struct tm lt;
@@ -206,35 +216,36 @@ void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, 
 	lock();
 
 	// not used currently --> 	if (level < LOCAL.level)   goto exit;
+	char timestamp_[32] = { 0 };
+	time_stamp_long(&timestamp_);
 
-	// errno_t errno_rez = 0; 
+	if (LOCAL.full_time_stamp)
+		time_stamp_long(&timestamp_);
+	else
+		time_stamp_short(&timestamp_);
 
   /* Log to console using stderr */
 	if (!LOCAL.quiet) {
-
-		va_list args;
-		char buf[16] = { 0 };
-		time_stamp_short(&buf);
 
 #ifdef DBJ_LOG_USE_COLOR
 
 		if (LOCAL.file_line_show) {
 			fprintf(
 				stderr, "%s %s%-5s" VT100_RESET VT100_LIGHT_GRAY "%s : %d : "VT100_RESET,
-				buf, level_colors[level], level_names[level], file, line);
+				timestamp_, level_colors[level], level_names[level], file, line);
 		}
 		else {
 			fprintf(
 				stderr, "%s %s%-5s "VT100_RESET,
-				buf, level_colors[level], level_names[level]);
+				timestamp_, level_colors[level], level_names[level]);
 		}
 #else
 		if (LOCAL.file_line_show)
-			fprintf(stderr, "%s %-5s %s : %d : ", buf, level_names[level], file, line);
+			fprintf(stderr, "%s %-5s %s : %d : ", timestamp_, level_names[level], file, line);
 		else
-			fprintf(stderr, "%s %-5s ", buf, level_names[level]);
+			fprintf(stderr, "%s %-5s ", timestamp_, level_names[level]);
 #endif
-
+		va_list args;
 		va_start(args, fmt);
 		vfprintf(stderr, fmt, args);
 		va_end(args);
@@ -246,13 +257,10 @@ void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, 
 	if (LOCAL.fp) {
 		va_list args;
 
-		char buf[32] = { 0 };
-		time_stamp_long(&buf);
-
 		if (LOCAL.file_line_show)
-			fprintf(LOCAL.fp, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
+			fprintf(LOCAL.fp, "%s %-5s %s:%d: ", timestamp_, level_names[level], file, line);
 		else
-			fprintf(LOCAL.fp, "%s %-5s: ", buf, level_names[level]);
+			fprintf(LOCAL.fp, "%s %-5s: ", timestamp_, level_names[level]);
 		/*
 		ONE: we do not filter out the escape chars
 		*/
@@ -344,6 +352,12 @@ https://stackoverflow.com/a/12255836/10870835
 bool dbj_log_setup
 (/*DBJ_LOG_SETUP_ENUM*/ int setup, const char* app_full_path)
 {
+	if (setup & DBJ_LOG_FULL_TIMESTAMP) {
+		LOCAL.full_time_stamp = true;
+	}
+	else // default is short time stamp
+		LOCAL.full_time_stamp = false ;
+
 	if (setup & DBJ_LOG_FILE_LINE_OFF ) {
 		log_set_fileline(false);
 	}
@@ -447,7 +461,7 @@ int dbj_log_finalize(void)
 
 static dbj_fhandle dbj_fhandle_make(const char* name_)
 {
-	dbj_fhandle fh = { '\0', dbj_fhandle_bad_descriptor };
+	dbj_fhandle fh = { {'\0'}, dbj_fhandle_bad_descriptor };
 	int rez = _snprintf_s(fh.name, dbj_fhandle_max_name_len, _TRUNCATE, "%s.%s", name_, DBJ_FHANDLE_SUFFIX);
 	DBJ_ASSERT(rez > 0);
 	return fh;
@@ -539,5 +553,50 @@ static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 	DBJ_FERROR(fp_);
 	return fp_;
 }
+
+// make sure you call this once upon app startup
+// make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
+// you want before calling this function
+int dbj_simple_log_startup(const char* app_full_path)
+{
+	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH) {
+		if (!app_full_path) return EXIT_FAILURE;
+	}
+
+	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH) {
+		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, app_full_path))
+			return EXIT_FAILURE;
+	}
+	else {
+		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, NULL))
+			return EXIT_FAILURE;
+	}
+
+	// this will thus go into which ever log target you have set
+	// log file or console or both or none
+
+	char full_tstamp_[32] = { 0 };
+
+	time_stamp_long(&full_tstamp_);
+
+	dbj_log_trace(" %s", "                                                              ");
+	dbj_log_trace(" %s", "--------------------------------------------------------------");
+	dbj_log_trace(" Start time: %s", full_tstamp_);
+	dbj_log_trace(" %s", "                                                              ");
+	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH)
+		dbj_log_trace(" Log file: %s", current_log_file_path());
+	dbj_log_trace(" %s", "                                                              ");
+
+#ifdef DBJ_LOG_TESTING
+	dbj_log_trace("Log  TRACE");
+	dbj_log_debug("Log  DEBUG");
+	dbj_log_info("Log  INFO");
+	dbj_log_warn("Log  WARN");
+	dbj_log_error("Log  ERROR");
+	dbj_log_fatal("Log  FATAL");
+#endif
+	return EXIT_SUCCESS;
+}
+
 
 
