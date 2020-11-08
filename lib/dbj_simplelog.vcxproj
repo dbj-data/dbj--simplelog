@@ -185,6 +185,7 @@
   <ItemGroup>
     <ClInclude Include="..\dbj_fhandle.h" />
     <ClInclude Include="..\dbj_simple_log.h" />
+    <ClInclude Include="..\dbj_simple_log_host.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

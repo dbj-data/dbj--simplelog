@@ -289,10 +289,9 @@ void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#define STRICT
-#define WIN32_LEAN_AND_MEAN
+#ifndef WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#endif
 
 static bool enable_vt_mode()
 {
@@ -310,6 +309,17 @@ static bool enable_vt_mode()
 	{
 		return false;
 	}
+	/*
+	Virtual terminal mode is available in the console starting with
+	Windows 10.0.10586. It's not supported by the OS if setting 
+	the mode fails with ERROR_INVALID_PARAMETER (87). Also, 
+	it's only implemented in the new console. With the legacy 
+	console selected in Windows 10, enabling VT mode may succeed, 
+	but it won't actually enable VT support.
+	*/
+#ifndef	ENABLE_VIRTUAL_TERMINAL_PROCESSING
+	return false;
+#endif
 
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	if (!SetConsoleMode(hOut, dwMode))

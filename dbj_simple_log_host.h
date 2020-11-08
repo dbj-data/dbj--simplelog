@@ -39,7 +39,7 @@ extern "C" {
 		DBJ_LOG_FILE_LINE_OFF = 4,
 		/* no console output, beware of no file and seting this in the same time */
 		DBJ_LOG_NO_CONSOLE = 8,
-		/* defualt is time  only */
+		/* default is time  only */
 		DBJ_LOG_FULL_TIMESTAMP = 16
 	} DBJ_LOG_SETUP_ENUM;
 
@@ -63,14 +63,20 @@ extern "C" {
 // you want before calling this function
 	int dbj_simple_log_startup(const char* /*app_full_path*/);
 
-	/* --------------------------------------------------------------------------------------*/
+/* --------------------------------------------------------------------------------------*/
 #ifdef __cplusplus
 } // extern "C" 
 #endif // __cplusplus
 
+// yes this is WIN only
+#define NOMINMAX
+#define STRICT 1
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 /*
  --------------------------------------------------------------------------------------
-clang/gnuc initialization and deinitialization encapsulated here
+clang-cl initialization and deinitialization will happen automagically
+C or C++
 
 for clang on win aka clang-cl.exe
 WARNING 2020 Q4: destructor works only if runtime lib is static lib!
@@ -78,39 +84,64 @@ WARNING 2020 Q4: destructor works only if runtime lib is static lib!
 #ifdef __clang__
 __attribute__((constructor))
 #endif
-static inline void dbj_simplelog_before(void)
+ inline void dbj_simplelog_before(void)
 {
-	const char app_full_path[1024] = { 0 };
+	char app_full_path[1024] = { 0 };
 	// Q: is __argv available for windows desktop apps?
 	// A: no it is not
 	if (__argv) {
-		strncpy_s(app_full_path, strlen(__argv[0]), __argv[0], 1024);
-		_ASSERTE(&app_full_path[0]);
+		strncpy_s( &app_full_path[0], strlen(__argv[0]), __argv[0], 1024);
+		DBJ_ASSERT(&app_full_path[0]);
 	}
 	else {
 		// win32 required here
 		int rez = GetModuleFileNameA(
-			/*(HINSTANCE)*/NULL, app_full_path, 1024
+			(HINSTANCE)NULL, app_full_path, 1024
 		);
-		_ASSERTE(rez != 0);
+		DBJ_ASSERT(rez != 0);
 	}
 	int rez = dbj_simple_log_startup(app_full_path);
-	_ASSERTE(EXIT_SUCCESS == rez);
+	DBJ_ASSERT(EXIT_SUCCESS == rez);
 }
 
 #ifdef __clang__
 __attribute__((destructor))
 #endif
-static inline void dbj_simple_log_after(void) {
+ inline void dbj_simple_log_after(void) {
 	int rez = dbj_log_finalize();
-	_ASSERTE(EXIT_SUCCESS == rez);
+	DBJ_ASSERT(EXIT_SUCCESS == rez);
 }
+
+#ifndef __clang__
+#ifdef __cplusplus
+//
+// in no clang c++ situation 
+// here is the simple solution
+// although, c++ 'static fiasco' might not 
+// allow for this to happen early enough
+//
+struct simple_log_protector final {
+
+	simple_log_protector() noexcept {
+		dbj_simplelog_before();
+	}
+
+	~simple_log_protector() noexcept {
+		dbj_simple_log_after();
+	}
+};
+
+inline const simple_log_protector simple_log_protector__ ;
+
+#endif // __cplusplus
+#endif // __clang__
+
 
 #ifndef __clang__
 #ifndef __cplusplus
 
 // note for eggheads: yes I know there is a way to code constructor for MSVC
-// but I deliberately do not want to use linker hacks
+// in C, but I deliberately do not want to use linker hacks
 // instead I use clang-cl.exe
 // if you feverishly oppose, please insert your MSVC implementation here
 
@@ -119,7 +150,5 @@ static inline void dbj_simple_log_after(void) {
 
 #endif // !__cplusplus
 #endif // ! __clang__
-
-
 
 #endif // DBJ_SIMPLE_LOG_HOST_INC
