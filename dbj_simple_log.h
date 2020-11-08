@@ -1,6 +1,9 @@
-#pragma once
 #ifndef _DBJ_SIMPLE_LOG_H_INCLUDED_
 #define _DBJ_SIMPLE_LOG_H_INCLUDED_
+
+#ifdef __clang__
+#pragma clang system_header
+#endif // __clang__
 
 /* (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ */
 
@@ -31,10 +34,10 @@
 #define DBJ_SIMPLE_LOG_AUTO_FLUSH
 #endif
 
-#define DBJ_SIMPLE_LOG_MAJOR 3
-#define DBJ_SIMPLE_LOG_MINOR 5
-#define DBJ_SIMPLE_LOG_PATCH 4
-#define DBJ_SIMPLE_LOG_VERSION "3.5.4"
+#define DBJ_SIMPLE_LOG_MAJOR 4
+#define DBJ_SIMPLE_LOG_MINOR 0
+#define DBJ_SIMPLE_LOG_PATCH 0
+#define DBJ_SIMPLE_LOG_VERSION "4.0.0"
 
 #ifdef __cplusplus
 extern "C" {

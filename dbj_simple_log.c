@@ -43,16 +43,6 @@
 typedef int errno_t;
 #endif
 
-/*
-currently not public API
-making it so is of a questionable value as it inevitably
-will complicate the public API
-*/
-
-// someday soon WIN10 will not need this
-// as an explicit call
-bool enable_vt_mode();
-
 // dbj::simplelog::log_lock_function_ptr 
 // user_data is user data pointer
 // lock == true  -- lock
@@ -64,41 +54,24 @@ typedef void (*log_lock_function_ptr)(bool /*lock*/);
 // user_data is unused 
 void  default_protector_function(bool /*lock*/);
 
-// works but currently unused
-// primary use is to keep mutex or whatever else 
-// to be used by user locking function
-void log_set_user_data(void*);
-// user locking function is set here
-// has to match log_lock_function_ptr signatured, and logic
-void log_set_lock(log_lock_function_ptr);
-
-void log_set_level(int);
-
-/* dbj added the second argument, for full file path */
-void log_set_fp(FILE*, const char*);
-
-/* beware: if quiet and no file there is no logging at all */
-void log_set_quiet(bool);
-/* do not add file + line to log lines stamp, or add */
-void log_set_fileline(bool);
-
 static struct {
 	void* user_data;
 	log_lock_function_ptr lock;
 	FILE* fp;
 	int level;
-	int quiet;
+	int no_console;
 	bool file_line_show;
 	/* default is false, that means: time only */
 	bool full_time_stamp;
 	char log_f_name[BUFSIZ];
-} LOCAL = { 
-	.user_data = 0, 
-	.lock = 0, 
-	.fp = 0, 
-	.level = DBJ_LOG_TRACE, 
-	.quiet = 0, 
-	.file_line_show = false, 
+} LOCAL = {
+		// defaults
+	.user_data = 0,
+	.lock = 0,
+	.fp = 0,
+	.level = DBJ_LOG_TRACE,
+	.no_console = 0,
+	.file_line_show = false,
 	.full_time_stamp = false,
 	 .log_f_name = {'\0'} };
 
@@ -116,6 +89,8 @@ static const char* set_log_file_name(const char new_name[BUFSIZ]) {
 static const char* level_names[] = {
   "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
 };
+
+enum { dbj_COLOR_RESET = 0, dbj_LIGHT_GRAY = 1 };
 
 #ifdef DBJ_LOG_USE_COLOR
 
@@ -137,6 +112,22 @@ static const char* level_colors[] = {
 	/* ERROR */ VT100_LIGHT_RED,
 	/* FATAL */ VT100_LIGHT_MAGENTA
 };
+
+static const char* colors_[] = {
+	/* RESET */ VT100_RESET, /* dbj_LIGHT_GRAY */ VT100_LIGHT_GRAY
+};
+#else
+static const char* level_colors[] = {
+	/* TRACE */  "",
+	/* DEBUG */ "",
+	/* INFO */ "",
+	/* WARN */ "",
+	/* ERROR */ "",
+	/* FATAL */ ""
+};
+static const char* colors_[] = {
+	/* RESET */ "", /* dbj_LIGHT_GRAY */ ""
+};
 #endif
 
 
@@ -146,29 +137,10 @@ static void lock(void) {
 	}
 }
 
-
 static void unlock(void) {
 	if (LOCAL.lock) {
 		LOCAL.lock(false);
 	}
-}
-
-static void log_set_fileline(bool show)
-{
-	LOCAL.file_line_show = show;
-}
-
-static void log_set_user_data(void* user_data) {
-	LOCAL.user_data = user_data;
-}
-
-static void* log_get_user_data(void) {
-	return LOCAL.user_data;
-}
-
-
-static void log_set_lock(log_lock_function_ptr fn) {
-	LOCAL.lock = fn;
 }
 
 static void log_set_fp(FILE* fp, const char* file_path_name) {
@@ -186,72 +158,55 @@ static void log_set_fp(FILE* fp, const char* file_path_name) {
 
 // not used currently --> void log_set_level(int level) {  LOCAL.level = level; }
 
-// true for quiet enabled 
-// in other words -- silent
-static void log_set_quiet(bool enable) {
-	LOCAL.quiet = enable;
-}
-
-static void time_stamp_short(char(*buf)[32])
+static void time_stamp_(char(*buf)[32], bool short_)
 {
 	time_t t = time(NULL);
 	struct tm lt;
 	errno_t errno_rez = localtime_s(&lt, &t);
 	DBJ_ASSERT(errno_rez == 0);
-	(*buf)[strftime((*buf), sizeof(*buf), "%H:%M:%S", &lt)] = '\0';
+	if (short_)
+		(*buf)[strftime((*buf), sizeof(*buf), "%H:%M:%S", &lt)] = '\0';
+	else
+		(*buf)[strftime((*buf), sizeof(*buf), "%Y-%m-%d %H:%M:%S", &lt)] = '\0';
 }
 
-static void time_stamp_long(char(*buf)[32])
-{
-	time_t t = time(NULL);
-	struct tm lt;
-	errno_t errno_rez = localtime_s(&lt, &t);
-	DBJ_ASSERT(errno_rez == 0);
-	(*buf)[strftime((*buf), sizeof(*buf), "%Y-%m-%d %H:%M:%S", &lt)] = '\0';
-}
-
+////////////////////////////////////////////////////////////////////////////////
+/// here the logging is actually done
 void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, ...)
 {
-	/* Acquire lock */
+	/* Acquire lock, if MT was part of the setup */
 	lock();
 
-	// not used currently --> 	if (level < LOCAL.level)   goto exit;
 	char timestamp_[32] = { 0 };
-	time_stamp_long(&timestamp_);
 
 	if (LOCAL.full_time_stamp)
-		time_stamp_long(&timestamp_);
+		time_stamp_(&timestamp_, false );
 	else
-		time_stamp_short(&timestamp_);
+		time_stamp_(&timestamp_, true );
 
-  /* Log to console using stderr */
-	if (!LOCAL.quiet) {
-
-#ifdef DBJ_LOG_USE_COLOR
+	/* Log to console using stderr */
+	if (!LOCAL.no_console) {
 
 		if (LOCAL.file_line_show) {
 			fprintf(
-				stderr, "%s %s%-5s" VT100_RESET VT100_LIGHT_GRAY "%s : %d : "VT100_RESET,
-				timestamp_, level_colors[level], level_names[level], file, line);
+				stderr, "%s %s%-5s%s%s%s(%d) : %s",
+				timestamp_, level_colors[level], level_names[level], colors_[dbj_COLOR_RESET], colors_[dbj_LIGHT_GRAY], file, line, colors_[dbj_COLOR_RESET]
+			);
 		}
 		else {
 			fprintf(
-				stderr, "%s %s%-5s "VT100_RESET,
-				timestamp_, level_colors[level], level_names[level]);
+				stderr, "%s %s%-5s%s",
+				timestamp_, level_colors[level], level_names[level], colors_[dbj_COLOR_RESET]
+			);
 		}
-#else
-		if (LOCAL.file_line_show)
-			fprintf(stderr, "%s %-5s %s : %d : ", timestamp_, level_names[level], file, line);
-		else
-			fprintf(stderr, "%s %-5s ", timestamp_, level_names[level]);
-#endif
+
 		va_list args;
 		va_start(args, fmt);
 		vfprintf(stderr, fmt, args);
 		va_end(args);
 		fprintf(stderr, "\n");
 
-	} // log not quiet
+	} // eof log to console using stderr
 
 	/* Log to file */
 	if (LOCAL.fp) {
@@ -290,6 +245,7 @@ void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, 
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
 
@@ -311,10 +267,10 @@ static bool enable_vt_mode()
 	}
 	/*
 	Virtual terminal mode is available in the console starting with
-	Windows 10.0.10586. It's not supported by the OS if setting 
-	the mode fails with ERROR_INVALID_PARAMETER (87). Also, 
-	it's only implemented in the new console. With the legacy 
-	console selected in Windows 10, enabling VT mode may succeed, 
+	Windows 10.0.10586. It's not supported by the OS if setting
+	the mode fails with ERROR_INVALID_PARAMETER (87). Also,
+	it's only implemented in the new console. With the legacy
+	console selected in Windows 10, enabling VT mode may succeed,
 	but it won't actually enable VT support.
 	*/
 #ifndef	ENABLE_VIRTUAL_TERMINAL_PROCESSING
@@ -357,46 +313,37 @@ if in need of some kindergarten enum masks handling refresher please look here
 https://stackoverflow.com/a/12255836/10870835
 */
 #undef  DBJ_LOG_IS_BIT
-#define DBJ_LOG_IS_BIT(S_, B_) (((int)S_ & (int)B_) != 0)
+#define DBJ_LOG_IS_BIT(S_, B_) ( 0 != ((S_) & (B_)) )
 
-bool dbj_log_setup
-(/*DBJ_LOG_SETUP_ENUM*/ int setup, const char* app_full_path)
+static bool dbj_log_setup
+(/*DBJ_LOG_SETUP_ENUM*/ const int setup, const char* app_full_path)
 {
-	if (setup & DBJ_LOG_FULL_TIMESTAMP) {
-		LOCAL.full_time_stamp = true;
-	}
-	else // default is short time stamp
-		LOCAL.full_time_stamp = false ;
+	const bool file_log_ = DBJ_LOG_IS_BIT(setup, DBJ_LOG_TO_FILE);
 
-	if (setup & DBJ_LOG_FILE_LINE_OFF ) {
-		log_set_fileline(false);
-	}
-	else
-		log_set_fileline(true);
+	LOCAL.full_time_stamp = DBJ_LOG_IS_BIT(setup, DBJ_LOG_FULL_TIMESTAMP);
+	LOCAL.file_line_show =  DBJ_LOG_IS_BIT(setup, DBJ_LOG_FILELINE_SHOW);
+	LOCAL.no_console = DBJ_LOG_IS_BIT(setup, DBJ_LOG_NO_CONSOLE);
+	LOCAL.lock = DBJ_LOG_IS_BIT(setup, DBJ_LOG_MT) ? default_protector_function : NULL;
 
-	if ( setup & DBJ_LOG_MT ) {
-		log_set_lock(default_protector_function);
-	}
-
-	if ( setup & DBJ_LOG_NO_CONSOLE) {
-		log_set_quiet(true);
-#ifdef _DEBUG
-		if (app_full_path == NULL) {
-			perror("\nWARNING: DBJ_LOG_NO_CONSOLE is set, but no log file is requested");
+	if (LOCAL.no_console)
+		if (!file_log_)
+		{
+			DBJ_VERIFY(LOCAL.no_console || file_log_);
+			// run-time feeble attempt
+			// WARNING: DBJ_LOG_NO_CONSOLE is set, but no log file is requested?
+			DBJ_PERROR;
 		}
-#endif
-	}
-	else
-		log_set_quiet(false);
 
 	// caller does not want any kind of local log file
-	if (
-		(! (setup & DBJ_LOG_TO_APP_PATH) )
-		|| (app_full_path == NULL)
-		)
+	if (!file_log_)
+		// app_full_path ignored here
 	{
+#ifdef DBJ_LOG_USE_COLOR
 		return 	enable_vt_mode();
-	}
+#else
+		return true;
+#endif
+}
 
 	// make it once
 	static dbj_fhandle log_file_handle_shared_;
@@ -416,19 +363,81 @@ bool dbj_log_setup
 	);
 
 	// we keep it in user_data void * so we decouple from dbj_fhandle
-	log_set_user_data(&log_file_handle_shared_);
+	LOCAL.user_data = (&log_file_handle_shared_);
 
 	return true;
 } // dbj_log_setup
 
 #undef DBJ_LOG_IS_BIT
 
+static bool startup_done = false;
+
+// make sure you call this once upon app startup
+// make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
+// you want before calling this function
+int dbj_simple_log_startup(const char* app_full_path)
+{
+	if (startup_done) return EXIT_SUCCESS;
+	// users must give value to this
+	// before this is called
+	// ideally before simplelog is ever used
+	(void)/*extern int*/ dbj_simple_log_setup_;
+
+	if (dbj_simple_log_setup_ & DBJ_LOG_TO_FILE) {
+		if (!app_full_path) return EXIT_FAILURE;
+	}
+
+	if (!dbj_log_setup(dbj_simple_log_setup_, app_full_path))
+		return EXIT_FAILURE;
+
+	// this will thus go into which ever log target you have set
+	// log file or console or both or none
+
+	char full_tstamp_[32] = { 0 };
+	time_stamp_(&full_tstamp_, false );
+
+	dbj_log_trace(" %s", "                                                              ");
+	dbj_log_trace(" %s", "--------------------------------------------------------------");
+	dbj_log_trace(" Start time: %s", full_tstamp_);
+	dbj_log_trace(" %s", "                                                              ");
+	if (dbj_simple_log_setup_ & DBJ_LOG_TO_FILE)
+		dbj_log_trace(" Log file: %s", current_log_file_path());
+	dbj_log_trace(" %s", "                                                              ");
+
+	if (dbj_simple_log_setup_ & DBJ_LOG_TESTING)
+	{
+		dbj_log_info("BEGIN Internal Test");
+		dbj_log_info(" ");
+		dbj_log_info("LOCAL.user_data       :  %4X", LOCAL.user_data );
+		dbj_log_info("LOCAL.lock            :  %4X", LOCAL.lock);
+		dbj_log_info("LOCAL.fp              :  %4X", LOCAL.fp);
+		dbj_log_info("LOCAL.level           :  %d", LOCAL.level);
+		dbj_log_info("LOCAL.no_console      :  %d", LOCAL.no_console);
+		dbj_log_info("LOCAL.file_line_show  :  %s", LOCAL.file_line_show  ? "true" : "false");
+		dbj_log_info("LOCAL.full_time_stamp :  %s", LOCAL.full_time_stamp ? "true" : "false");
+		dbj_log_info("LOCAL.log_f_name set  :  %s", (LOCAL.log_f_name[0]) ? "true" : "false");
+		dbj_log_info(" ");
+		dbj_log_trace("Log  TRACE");
+		dbj_log_debug("Log  DEBUG");
+		dbj_log_info("Log  INFO");
+		dbj_log_warn("Log  WARN");
+		dbj_log_error("Log  ERROR");
+		dbj_log_fatal("Log  FATAL");
+		dbj_log_info(" ");
+		dbj_log_info("END Internal Test");
+	}
+	startup_done = true ;
+	return EXIT_SUCCESS;
+}
+
+
+
 // this might assert on debug builds
 // make sure it does not, on release builds
 int dbj_log_finalize(void)
 {
 	// make sure setup was called 
-	dbj_fhandle* fh = log_get_user_data();
+	dbj_fhandle* fh = LOCAL.user_data;
 
 	// log file was not made
 	// the session was in a console mode
@@ -530,7 +539,7 @@ static errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 		DBJ_ASSERT(false);
 		return ENODEV;
 		break;
-	}
+}
 	return (errno_t)0;
 };
 
@@ -562,50 +571,6 @@ static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 	DBJ_ASSERT(fp_ != NULL);
 	DBJ_FERROR(fp_);
 	return fp_;
-}
-
-// make sure you call this once upon app startup
-// make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
-// you want before calling this function
-int dbj_simple_log_startup(const char* app_full_path)
-{
-	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH) {
-		if (!app_full_path) return EXIT_FAILURE;
-	}
-
-	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH) {
-		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, app_full_path))
-			return EXIT_FAILURE;
-	}
-	else {
-		if (!dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, NULL))
-			return EXIT_FAILURE;
-	}
-
-	// this will thus go into which ever log target you have set
-	// log file or console or both or none
-
-	char full_tstamp_[32] = { 0 };
-
-	time_stamp_long(&full_tstamp_);
-
-	dbj_log_trace(" %s", "                                                              ");
-	dbj_log_trace(" %s", "--------------------------------------------------------------");
-	dbj_log_trace(" Start time: %s", full_tstamp_);
-	dbj_log_trace(" %s", "                                                              ");
-	if ((DBJ_LOG_DEFAULT_SETUP)&DBJ_LOG_TO_APP_PATH)
-		dbj_log_trace(" Log file: %s", current_log_file_path());
-	dbj_log_trace(" %s", "                                                              ");
-
-#ifdef DBJ_LOG_TESTING
-	dbj_log_trace("Log  TRACE");
-	dbj_log_debug("Log  DEBUG");
-	dbj_log_info("Log  INFO");
-	dbj_log_warn("Log  WARN");
-	dbj_log_error("Log  ERROR");
-	dbj_log_fatal("Log  FATAL");
-#endif
-	return EXIT_SUCCESS;
 }
 
 

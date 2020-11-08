@@ -1,8 +1,5 @@
-#pragma once
-
 #ifndef DBJ_SIMPLE_LOG_HOST_INC
 #define DBJ_SIMPLE_LOG_HOST_INC
-
 /* (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/
 
 Decision of where the log goes is done at compile time
@@ -15,12 +12,33 @@ None of those users must not include this header
 DBJ_LOG_DEFAULT_SETUP must be defined if users do not want the default setyp
 */
 
+#ifdef __clang__
+#pragma clang system_header
+#endif // __clang__
+
 #include "dbj_simple_log.h"
+
+#ifndef WIN32_LEAN_AND_MEAN
+// yes this is WIN only
+#define NOMINMAX
+#define STRICT 1
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif // ! WIN32_LEAN_AND_MEAN
+
+#ifndef DBJ_ASSERT
+#ifdef _DEBUG
+#define DBJ_ASSERT _ASSERTE
+#else
+#define	DBJ_ASSERT(X_) ((void)(X_))
+#endif
+#endif // ! DBJ_ASSERT
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
+	int dbj_simple_log_startup(const char* /*app_full_path*/);
 	/*
 	ATTENTION! log file is not explicitly closed by this lib
 	please make sure at application end, you call this, (somewhere clever as you do)
@@ -34,83 +52,72 @@ extern "C" {
 		/* set to Multi Threaded */
 		DBJ_LOG_MT = 1,
 		/* if app full path is given  use it to obtain log file name*/
-		DBJ_LOG_TO_APP_PATH = 2,
+		DBJ_LOG_TO_FILE = 2,
 		/* do not show file line on every log line */
-		DBJ_LOG_FILE_LINE_OFF = 4,
+		DBJ_LOG_FILELINE_SHOW = 4,
 		/* no console output, beware of no file and seting this in the same time */
 		DBJ_LOG_NO_CONSOLE = 8,
 		/* default is time  only */
-		DBJ_LOG_FULL_TIMESTAMP = 16
+		DBJ_LOG_FULL_TIMESTAMP = 16,
+		/* some quick minimal internal tests */
+		DBJ_LOG_TESTING = 32
 	} DBJ_LOG_SETUP_ENUM;
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	/// predefined setups for both release and debug builds
 	/// 
 #undef  DBJ_LOG_DEFAULT_FILE_SETUP
-#define DBJ_LOG_DEFAULT_FILE_SETUP DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
+#define DBJ_LOG_DEFAULT_FILE_SETUP DBJ_LOG_TO_FILE | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
 
 #undef  DBJ_LOG_DEFAULT_WITH_CONSOLE
-#define DBJ_LOG_DEFAULT_WITH_CONSOLE DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT 
+#define DBJ_LOG_DEFAULT_WITH_CONSOLE DBJ_LOG_MT 
 
-/// default is log to file, MT resilient, no console
-/// unless you define your combination differently that is
-#ifndef  DBJ_LOG_DEFAULT_SETUP
-#define  DBJ_LOG_DEFAULT_SETUP DBJ_LOG_DEFAULT_FILE_SETUP
-#endif // ! DBJ_LOG_DEFAULT_SETUP
+	/*
+	--------------------------------------------------------------------------------------
+	users must give a value to this before dbj simplelog is initialized
+	*/
+	extern int dbj_simple_log_setup_;
 
-// make sure you call this once upon app startup
-// make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
-// you want before calling this function
-	int dbj_simple_log_startup(const char* /*app_full_path*/);
+	/*
+	--------------------------------------------------------------------------------------
+	clang-cl initialization and deinitialization will happen automagically
+	C or C++
 
-/* --------------------------------------------------------------------------------------*/
-#ifdef __cplusplus
-} // extern "C" 
-#endif // __cplusplus
-
-// yes this is WIN only
-#define NOMINMAX
-#define STRICT 1
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-/*
- --------------------------------------------------------------------------------------
-clang-cl initialization and deinitialization will happen automagically
-C or C++
-
-for clang on win aka clang-cl.exe
-WARNING 2020 Q4: destructor works only if runtime lib is static lib!
-*/
+	for clang on win aka clang-cl.exe
+	WARNING 2020 Q4: destructor works only if runtime lib is static lib!
+	--------------------------------------------------------------------------------------
+	*/
 #ifdef __clang__
-__attribute__((constructor))
+	__attribute__((constructor))
 #endif
- inline void dbj_simplelog_before(void)
-{
-	char app_full_path[1024] = { 0 };
-	// Q: is __argv available for windows desktop apps?
-	// A: no it is not
-	if (__argv) {
-		strncpy_s( &app_full_path[0], strlen(__argv[0]), __argv[0], 1024);
-		DBJ_ASSERT(&app_full_path[0]);
-	}
-	else {
+		inline void dbj_simplelog_before(void)
+	{
+		char app_full_path[1024] = { 0 };
+		// Q: is __argv available for windows desktop apps?
+		// A: no it is not
 		// win32 required here
 		int rez = GetModuleFileNameA(
 			(HINSTANCE)NULL, app_full_path, 1024
 		);
 		DBJ_ASSERT(rez != 0);
+
+		rez = dbj_simple_log_startup(app_full_path);
+		DBJ_ASSERT(EXIT_SUCCESS == rez);
 	}
-	int rez = dbj_simple_log_startup(app_full_path);
-	DBJ_ASSERT(EXIT_SUCCESS == rez);
-}
 
 #ifdef __clang__
-__attribute__((destructor))
+	__attribute__((destructor))
 #endif
- inline void dbj_simple_log_after(void) {
-	int rez = dbj_log_finalize();
-	DBJ_ASSERT(EXIT_SUCCESS == rez);
-}
+		inline void dbj_simple_log_after(void) {
+		int rez = dbj_log_finalize();
+		DBJ_ASSERT(EXIT_SUCCESS == rez);
+	}
+
+	/* --------------------------------------------------------------------------------------*/
+#ifdef __cplusplus
+} // extern "C" 
+#endif // __cplusplus
+/* --------------------------------------------------------------------------------------*/
 
 #ifndef __clang__
 #ifdef __cplusplus
@@ -131,7 +138,7 @@ struct simple_log_protector final {
 	}
 };
 
-inline const simple_log_protector simple_log_protector__ ;
+inline const simple_log_protector simple_log_protector__;
 
 #endif // __cplusplus
 #endif // __clang__
