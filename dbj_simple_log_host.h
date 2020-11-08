@@ -3,7 +3,7 @@
 #ifndef DBJ_SIMPLE_LOG_HOST_INC
 #define DBJ_SIMPLE_LOG_HOST_INC
 
-/* (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ 
+/* (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/
 
 Decision of where the log goes is done at compile time
 
@@ -43,9 +43,9 @@ extern "C" {
 		DBJ_LOG_FULL_TIMESTAMP = 16
 	} DBJ_LOG_SETUP_ENUM;
 
-/////////////////////////////////////////////////////////////////////////////////////
-/// predefined setups for both release and debug builds
-/// 
+	/////////////////////////////////////////////////////////////////////////////////////
+	/// predefined setups for both release and debug builds
+	/// 
 #undef  DBJ_LOG_DEFAULT_FILE_SETUP
 #define DBJ_LOG_DEFAULT_FILE_SETUP DBJ_LOG_TO_APP_PATH | DBJ_LOG_FILE_LINE_OFF | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
 
@@ -63,13 +63,11 @@ extern "C" {
 // you want before calling this function
 	int dbj_simple_log_startup(const char* /*app_full_path*/);
 
-/* --------------------------------------------------------------------------------------*/
+	/* --------------------------------------------------------------------------------------*/
 #ifdef __cplusplus
 } // extern "C" 
 #endif // __cplusplus
 
-#ifndef __cplusplus
-#ifdef __clang__
 /*
  --------------------------------------------------------------------------------------
 clang/gnuc C initialization and deinitialization encapsulated here
@@ -77,38 +75,51 @@ clang/gnuc C initialization and deinitialization encapsulated here
 for clang on win aka clang-cl.exe
 destructor works only if runtime lib is static lib!
 */
-
-/*
- EXAMPLE
-
-__attribute__((constructor)) void dbj_log_initializator (dbj_simple_log_before)
-{
-		// is __argv available for windows desktop apps?
-		_ASSERTE(__argv);
-		_ASSERTE(EXIT_SUCCESS == dbj_simple_log_startup(__argv[0]));
-}
-
-*/
-#else // ! __clang__
-#pragma message("please make sure dbj_simple_log_startup() is called before app exit!")
-#endif // ! __clang__
-
-
 #ifdef __clang__
-/*
-EXAMPLE
+__attribute__((constructor))
+#endif
+static inline void dbj_simplelog_before(void)
+{
+	const char app_full_path[1024] = { 0 };
+	// Q: is __argv available for windows desktop apps?
+	// A: no it is not
+	if (__argv) {
+		strncpy_s(app_full_path, strlen(__argv[0]), __argv[0], 1024);
+		_ASSERTE(&app_full_path[0]);
+	}
+	else {
+		// win32 required here
+		int rez = GetModuleFileNameA(
+			/*(HINSTANCE)*/NULL, app_full_path, 1024
+		);
+		_ASSERTE(rez != 0);
+	}
 
-extern "C"
-__attribute__((destructor))
-inline void dbj_simple_log_after(void) {
-
-	_ASSERTE(dbj_log_finalize() == EXIT_SUCCESS);
-
+	int rez = dbj_simple_log_startup(app_full_path);
+	_ASSERTE(EXIT_SUCCESS == rez);
 }
-*/
-#else // ! __clang__
+#ifdef __clang__
+__attribute__((destructor))
+#endif
+static inline void dbj_simple_log_after(void) {
+	int rez = dbj_log_finalize();
+	_ASSERTE(EXIT_SUCCESS == rez);
+}
+
+#ifndef __clang__
+#ifndef __cplusplus
+
+// note for eggheads: yes I know there is a way to code constructor for MSVC
+// but I deliberately do not want to use linker hacks
+// instead I use clang-cl.exe
+// if you feverishly oppose, please insert your MSVC implementation here
+
+#pragma message("please make sure dbj_simple_log_startup() is called before app starts!")
 #pragma message("please make sure dbj_log_finalize() is called before app exit!")
-#endif // ! __clang__
+
 #endif // !__cplusplus
+#endif // ! __clang__
+
+
 
 #endif // DBJ_SIMPLE_LOG_HOST_INC
