@@ -70,10 +70,10 @@ extern "C" {
 
 /*
  --------------------------------------------------------------------------------------
-clang/gnuc C initialization and deinitialization encapsulated here
+clang/gnuc initialization and deinitialization encapsulated here
 
 for clang on win aka clang-cl.exe
-destructor works only if runtime lib is static lib!
+WARNING 2020 Q4: destructor works only if runtime lib is static lib!
 */
 #ifdef __clang__
 __attribute__((constructor))
@@ -94,10 +94,10 @@ static inline void dbj_simplelog_before(void)
 		);
 		_ASSERTE(rez != 0);
 	}
-
 	int rez = dbj_simple_log_startup(app_full_path);
 	_ASSERTE(EXIT_SUCCESS == rez);
 }
+
 #ifdef __clang__
 __attribute__((destructor))
 #endif
