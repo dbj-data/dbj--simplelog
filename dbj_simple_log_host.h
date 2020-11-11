@@ -66,8 +66,8 @@ extern "C" {
 	/////////////////////////////////////////////////////////////////////////////////////
 	/// predefined setups for both release and debug builds
 	/// 
-#undef  DBJ_LOG_DEFAULT_FILE_SETUP
-#define DBJ_LOG_DEFAULT_FILE_SETUP DBJ_LOG_TO_FILE | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
+#undef  DBJ_LOG_DEFAULT_SETUP
+#define DBJ_LOG_DEFAULT_SETUP DBJ_LOG_TO_FILE | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
 
 #undef  DBJ_LOG_DEFAULT_WITH_CONSOLE
 #define DBJ_LOG_DEFAULT_WITH_CONSOLE DBJ_LOG_MT 
