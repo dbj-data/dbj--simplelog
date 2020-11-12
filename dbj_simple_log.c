@@ -396,16 +396,17 @@ int dbj_simple_log_startup(const char* app_full_path)
 	char full_tstamp_[32] = { 0 };
 	time_stamp_(&full_tstamp_, false );
 
-	dbj_log_trace(" %s", "                                                              ");
-	dbj_log_trace(" %s", "--------------------------------------------------------------");
-	dbj_log_trace(" Start time: %s", full_tstamp_);
-	dbj_log_trace(" %s", "                                                              ");
+	dbj_log_info(" %s", "                                                              ");
+	dbj_log_info(" %s", "--------------------------------------------------------------");
+	dbj_log_info(" Start time: %s", full_tstamp_);
+	dbj_log_info(" %s", "                                                              ");
 	if (dbj_simple_log_setup_ & DBJ_LOG_TO_FILE)
-		dbj_log_trace(" Log file: %s", current_log_file_path());
-	dbj_log_trace(" %s", "                                                              ");
+		dbj_log_info(" Log file: %s", current_log_file_path());
+	dbj_log_info(" %s", "                                                              ");
 
 	if (dbj_simple_log_setup_ & DBJ_LOG_TESTING)
 	{
+		dbj_log_info(" ");
 		dbj_log_info("BEGIN Internal Test");
 		dbj_log_info(" ");
 		dbj_log_info("LOCAL.user_data       :  %4X", LOCAL.user_data );
@@ -425,6 +426,7 @@ int dbj_simple_log_startup(const char* app_full_path)
 		dbj_log_fatal("Log  FATAL");
 		dbj_log_info(" ");
 		dbj_log_info("END Internal Test");
+		dbj_log_info(" ");
 	}
 	startup_done = true ;
 	return EXIT_SUCCESS;
