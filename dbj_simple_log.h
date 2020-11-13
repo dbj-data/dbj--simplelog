@@ -51,6 +51,9 @@ extern "C" {
 	} DBJ_LOG_LEVELS_ENUM;
 #endif // DBJ_LOG_LEVELS_ENUM_DEFINED
 
+	// can be used from other parts,
+	// not just an host app
+	void dbj_simple_log_test(const char *);
 
 	/*	for users to see*/
 	const char* const current_log_file_path();

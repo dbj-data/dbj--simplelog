@@ -59,8 +59,6 @@ extern "C" {
 		DBJ_LOG_NO_CONSOLE = 8,
 		/* default is time  only */
 		DBJ_LOG_FULL_TIMESTAMP = 16,
-		/* some quick minimal internal tests */
-		DBJ_LOG_TESTING = 32
 	} DBJ_LOG_SETUP_ENUM;
 
 	/////////////////////////////////////////////////////////////////////////////////////

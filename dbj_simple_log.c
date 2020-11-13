@@ -404,17 +404,22 @@ int dbj_simple_log_startup(const char* app_full_path)
 		dbj_log_info(" Log file: %s", current_log_file_path());
 	dbj_log_info(" %s", "                                                              ");
 
-	if (dbj_simple_log_setup_ & DBJ_LOG_TESTING)
-	{
+	startup_done = true ;
+	return EXIT_SUCCESS;
+}
+
+/* public API too */
+void dbj_simple_log_test(const char * dummy_ )
+{
 		dbj_log_info(" ");
 		dbj_log_info("BEGIN Internal Test");
 		dbj_log_info(" ");
-		dbj_log_info("LOCAL.user_data       :  %4X", LOCAL.user_data );
+		dbj_log_info("LOCAL.user_data       :  %4X", LOCAL.user_data);
 		dbj_log_info("LOCAL.lock            :  %4X", LOCAL.lock);
 		dbj_log_info("LOCAL.fp              :  %4X", LOCAL.fp);
 		dbj_log_info("LOCAL.level           :  %d", LOCAL.level);
 		dbj_log_info("LOCAL.no_console      :  %d", LOCAL.no_console);
-		dbj_log_info("LOCAL.file_line_show  :  %s", LOCAL.file_line_show  ? "true" : "false");
+		dbj_log_info("LOCAL.file_line_show  :  %s", LOCAL.file_line_show ? "true" : "false");
 		dbj_log_info("LOCAL.full_time_stamp :  %s", LOCAL.full_time_stamp ? "true" : "false");
 		dbj_log_info("LOCAL.log_f_name set  :  %s", (LOCAL.log_f_name[0]) ? "true" : "false");
 		dbj_log_info(" ");
@@ -427,9 +432,6 @@ int dbj_simple_log_startup(const char* app_full_path)
 		dbj_log_info(" ");
 		dbj_log_info("END Internal Test");
 		dbj_log_info(" ");
-	}
-	startup_done = true ;
-	return EXIT_SUCCESS;
 }
 
 
