@@ -85,6 +85,46 @@ extern "C" {
 	WARNING 2020 Q4: destructor works only if runtime lib is static lib!
 	--------------------------------------------------------------------------------------
 	*/
+
+#ifndef HMODULE
+
+#include <winsdkver.h>
+
+#ifndef WINVER
+#define WINVER 0x0A00
+#endif
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0A00
+#endif
+
+	//-------------------------------------------------------------------------------
+
+#ifdef __STDC_ALLOC_LIB__
+#define __STDC_WANT_LIB_EXT2__ 1
+#else
+#define _POSIX_C_SOURCE 200809L
+#endif
+
+#include <crtdbg.h>
+#include <errno.h>
+
+#define NOMINMAX
+#define STRICT 1
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <processenv.h>
+
+#ifdef NOMINMAX
+#undef  min
+#define min(x, y) ((x) < (y) ? (x) : (y))
+
+#undef  max
+#define max(x, y) ((x) > (y) ? (x) : (y))
+#endif // DBJ_MINIMAX
+
+#endif // ! HMODULE
+
 #ifdef __clang__
 	__attribute__((constructor))
 #endif
@@ -95,7 +135,7 @@ extern "C" {
 		// A: no it is not
 		// win32 required here
 		int rez = GetModuleFileNameA(
-			(HINSTANCE)NULL, app_full_path, 1024
+			(HMODULE)NULL, app_full_path, 1024
 		);
 		DBJ_ASSERT(rez != 0);
 
