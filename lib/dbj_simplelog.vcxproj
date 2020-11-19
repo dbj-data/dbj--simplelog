@@ -93,9 +93,9 @@
       <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalOptions>/D_HAS_EXCEPTIONS=1 </AdditionalOptions>
+      <AdditionalOptions>/D_KERNEL_MODE</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -119,9 +119,9 @@
       <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalOptions>/D_HAS_EXCEPTIONS=1 </AdditionalOptions>
+      <AdditionalOptions>/D_KERNEL_MODE</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -145,9 +145,9 @@
       <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalOptions>/D_HAS_EXCEPTIONS=1 </AdditionalOptions>
+      <AdditionalOptions>/D_KERNEL_MODE</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -171,9 +171,9 @@
       <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalOptions>/D_HAS_EXCEPTIONS=1 </AdditionalOptions>
+      <AdditionalOptions>/D_KERNEL_MODE</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
