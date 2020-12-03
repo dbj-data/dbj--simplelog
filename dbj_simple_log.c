@@ -32,12 +32,16 @@
 
  // pch.h is implicitly included
  // and this is in there
- //#include <stdio.h>
- //#include <stdlib.h>
- //#include <stdarg.h>
- //#include <string.h>
- //#include <time.h>
- //#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <string.h>
+#include <time.h>
+#include <stdbool.h>
+#include <io.h>
+#include <fcntl.h>
+#include <crtdbg.h>
 
 #ifndef errno_t
 typedef int errno_t;
