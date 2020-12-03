@@ -28,7 +28,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{3ed27384-f32a-46b2-b826-81c9b52ee4d4}</ProjectGuid>
+    <ProjectGuid>{751516F5-506A-4C4C-AA31-E8AC4DE23D39}</ProjectGuid>
     <RootNamespace>dbjsimplelogcppx</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>

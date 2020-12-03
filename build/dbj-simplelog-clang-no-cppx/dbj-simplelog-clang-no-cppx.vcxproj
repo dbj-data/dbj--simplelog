@@ -28,7 +28,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{ffc89b0b-f4be-4489-b30b-0d4115a3ebb4}</ProjectGuid>
+    <ProjectGuid>{ED08B54B-56D4-4073-B6A9-AFE2C756368E}</ProjectGuid>
     <RootNamespace>dbjsimplelogclangnocppx</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -86,9 +86,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)bin</OutDir>
+    <TargetName>$(ProjectName)_$(Configuration)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)bin</OutDir>
+    <TargetName>$(ProjectName)_$(Configuration)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -150,11 +154,12 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
-      <AdditionalOptions>/permissive- /nologo /Zc:wchar_t  /DUNICODE /D_UNICODE /DWINVER=0x0A00 /GR- /D_WIN32_WINNT=0x0A00  /D_HAS_EXCEPTIONS=0 %(AdditionalOptions) /DDEBUG /D_DEBUG</AdditionalOptions>
+      <AdditionalOptions>/D_HAS_EXCEPTIONS=0</AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <ExceptionHandling>false</ExceptionHandling>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -177,11 +182,12 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
-      <AdditionalOptions>/permissive- /nologo /Zc:wchar_t  /DUNICODE /D_UNICODE /DWINVER=0x0A00 /GR- /D_WIN32_WINNT=0x0A00  /D_HAS_EXCEPTIONS=0 %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ExceptionHandling>false</ExceptionHandling>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <AdditionalOptions>/D_HAS_EXCEPTIONS=0</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
