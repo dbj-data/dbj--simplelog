@@ -3,7 +3,8 @@
   <PropertyGroup Label="Globals">
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <ItemsProjectGuid>{505da675-29a6-4bfb-9f4e-c4a4f49a0aff}</ItemsProjectGuid>
+    <ItemsProjectGuid>{199C3113-E09D-443A-9446-35C8A2F92AC2}</ItemsProjectGuid>
+    <ItemsProjectName>code-dbj-simplelog</ItemsProjectName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

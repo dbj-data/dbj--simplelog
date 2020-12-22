@@ -31,6 +31,7 @@
     <ProjectGuid>{59E330BB-6EC4-46D1-A74D-03A72E43B931}</ProjectGuid>
     <RootNamespace>dbjsimplelognocppx</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>lib-dbj-simplelog-no-cppx</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
