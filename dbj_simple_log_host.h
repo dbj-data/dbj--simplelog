@@ -76,6 +76,12 @@ extern "C" {
 	*/
 	extern int dbj_simple_log_setup_;
 
+	/* --------------------------------------------------------------------------------------*/
+#ifdef __cplusplus
+} // extern "C" 
+#endif // __cplusplus
+/* --------------------------------------------------------------------------------------*/
+
 	/*
 	--------------------------------------------------------------------------------------
 	clang-cl initialization and deinitialization will happen automagically
@@ -151,49 +157,44 @@ extern "C" {
 		DBJ_ASSERT(EXIT_SUCCESS == rez);
 	}
 
-	/* --------------------------------------------------------------------------------------*/
 #ifdef __cplusplus
-} // extern "C" 
-#endif // __cplusplus
-/* --------------------------------------------------------------------------------------*/
+namespace {
+	//
+	// in no clang c++ situation 
+	// here is the simple solution
+	// although, c++ 'static fiasco' might not 
+	// allow for this to happen early enough
+	//
+	struct simple_log_protector final {
 
-#ifndef __clang__
-#ifdef __cplusplus
-//
-// in no clang c++ situation 
-// here is the simple solution
-// although, c++ 'static fiasco' might not 
-// allow for this to happen early enough
-//
-struct simple_log_protector final {
+		simple_log_protector() noexcept {
+			dbj_simplelog_before();
+		}
 
-	simple_log_protector() noexcept {
-		dbj_simplelog_before();
-	}
+		~simple_log_protector() noexcept {
+			dbj_simple_log_after();
+		}
+	};
 
-	~simple_log_protector() noexcept {
-		dbj_simple_log_after();
-	}
-};
+	inline const simple_log_protector simple_log_protector__;
 
-inline const simple_log_protector simple_log_protector__;
+#define DBJ_SIMPLE_LOG_PROTECTOR_WORKETH
 
-#endif // __cplusplus
-#endif // __clang__
+} // ns
 
-
-#ifndef __clang__
-#ifndef __cplusplus
+#endif // !__cplusplus
 
 // note for eggheads: yes I know there is a way to code constructor for MSVC
 // in C, but I deliberately do not want to use linker hacks
 // instead I use clang-cl.exe
 // if you feverishly oppose, please insert your MSVC implementation here
+#ifndef __clang__
+#ifndef DBJ_SIMPLE_LOG_PROTECTOR_WORKETH
+#pragma message("MSVC C code: please make sure dbj_simple_log_startup() is called before app starts!")
+#pragma message("MSVC C code: please make sure dbj_log_finalize() is called before app exit!")
+#endif
+#endif
 
-#pragma message("please make sure dbj_simple_log_startup() is called before app starts!")
-#pragma message("please make sure dbj_log_finalize() is called before app exit!")
-
-#endif // !__cplusplus
-#endif // ! __clang__
+#undef DBJ_SIMPLE_LOG_PROTECTOR_WORKETH
 
 #endif // DBJ_SIMPLE_LOG_HOST_INC
