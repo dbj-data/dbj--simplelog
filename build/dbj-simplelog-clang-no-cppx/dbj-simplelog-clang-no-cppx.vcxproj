@@ -157,7 +157,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalOptions>/D_HAS_EXCEPTIONS=0</AdditionalOptions>
+      <AdditionalOptions>/D_CRT_SECURE_NO_WARNINGS /nologo /permissive- /DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00 </AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <ExceptionHandling>false</ExceptionHandling>
       <ForcedIncludeFiles>
@@ -190,7 +190,7 @@
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalOptions>/D_HAS_EXCEPTIONS=0</AdditionalOptions>
+      <AdditionalOptions>/D_CRT_SECURE_NO_WARNINGS /nologo /permissive- /DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00 </AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
