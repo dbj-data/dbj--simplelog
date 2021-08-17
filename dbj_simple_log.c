@@ -184,9 +184,9 @@ void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, 
 	char timestamp_[32] = { 0 };
 
 	if (LOCAL.full_time_stamp)
-		time_stamp_(&timestamp_, false );
+		time_stamp_(&timestamp_, false);
 	else
-		time_stamp_(&timestamp_, true );
+		time_stamp_(&timestamp_, true);
 
 	/* Log to console using stderr */
 	if (!LOCAL.no_console) {
@@ -325,7 +325,7 @@ static bool dbj_log_setup
 	const bool file_log_ = DBJ_LOG_IS_BIT(setup, DBJ_LOG_TO_FILE);
 
 	LOCAL.full_time_stamp = DBJ_LOG_IS_BIT(setup, DBJ_LOG_FULL_TIMESTAMP);
-	LOCAL.file_line_show =  DBJ_LOG_IS_BIT(setup, DBJ_LOG_FILELINE_SHOW);
+	LOCAL.file_line_show = DBJ_LOG_IS_BIT(setup, DBJ_LOG_FILELINE_SHOW);
 	LOCAL.no_console = DBJ_LOG_IS_BIT(setup, DBJ_LOG_NO_CONSOLE);
 	LOCAL.lock = DBJ_LOG_IS_BIT(setup, DBJ_LOG_MT) ? default_protector_function : NULL;
 
@@ -343,11 +343,10 @@ static bool dbj_log_setup
 		// app_full_path ignored here
 	{
 #ifdef DBJ_LOG_USE_COLOR
-		return 	enable_vt_mode();
-#else
-		return true;
+		enable_vt_mode();
 #endif
-}
+		return true;
+	}
 
 	// make it once
 	static dbj_fhandle log_file_handle_shared_;
@@ -398,7 +397,7 @@ int dbj_simple_log_startup(const char* app_full_path)
 	// log file or console or both or none
 
 	char full_tstamp_[32] = { 0 };
-	time_stamp_(&full_tstamp_, false );
+	time_stamp_(&full_tstamp_, false);
 
 	dbj_log_info(" %s", "                                                              ");
 	dbj_log_info(" %s", "--------------------------------------------------------------");
@@ -408,34 +407,34 @@ int dbj_simple_log_startup(const char* app_full_path)
 		dbj_log_info(" Log file: %s", current_log_file_path());
 	dbj_log_info(" %s", "                                                              ");
 
-	startup_done = true ;
+	startup_done = true;
 	return EXIT_SUCCESS;
 }
 
 /* public API too */
-void dbj_simple_log_test(const char * dummy_ )
+void dbj_simple_log_test(const char* dummy_)
 {
-		dbj_log_info(" ");
-		dbj_log_info("BEGIN Internal Test");
-		dbj_log_info(" ");
-		dbj_log_info("LOCAL.user_data       :  %4X", LOCAL.user_data);
-		dbj_log_info("LOCAL.lock            :  %4X", LOCAL.lock);
-		dbj_log_info("LOCAL.fp              :  %4X", LOCAL.fp);
-		dbj_log_info("LOCAL.level           :  %d", LOCAL.level);
-		dbj_log_info("LOCAL.no_console      :  %d", LOCAL.no_console);
-		dbj_log_info("LOCAL.file_line_show  :  %s", LOCAL.file_line_show ? "true" : "false");
-		dbj_log_info("LOCAL.full_time_stamp :  %s", LOCAL.full_time_stamp ? "true" : "false");
-		dbj_log_info("LOCAL.log_f_name set  :  %s", (LOCAL.log_f_name[0]) ? "true" : "false");
-		dbj_log_info(" ");
-		dbj_log_trace("Log  TRACE");
-		dbj_log_debug("Log  DEBUG");
-		dbj_log_info("Log  INFO");
-		dbj_log_warn("Log  WARN");
-		dbj_log_error("Log  ERROR");
-		dbj_log_fatal("Log  FATAL");
-		dbj_log_info(" ");
-		dbj_log_info("END Internal Test");
-		dbj_log_info(" ");
+	dbj_log_info(" ");
+	dbj_log_info("BEGIN Internal Test");
+	dbj_log_info(" ");
+	dbj_log_info("LOCAL.user_data       :  %4X", LOCAL.user_data);
+	dbj_log_info("LOCAL.lock            :  %4X", LOCAL.lock);
+	dbj_log_info("LOCAL.fp              :  %4X", LOCAL.fp);
+	dbj_log_info("LOCAL.level           :  %d", LOCAL.level);
+	dbj_log_info("LOCAL.no_console      :  %d", LOCAL.no_console);
+	dbj_log_info("LOCAL.file_line_show  :  %s", LOCAL.file_line_show ? "true" : "false");
+	dbj_log_info("LOCAL.full_time_stamp :  %s", LOCAL.full_time_stamp ? "true" : "false");
+	dbj_log_info("LOCAL.log_f_name set  :  %s", (LOCAL.log_f_name[0]) ? "true" : "false");
+	dbj_log_info(" ");
+	dbj_log_trace("Log  TRACE");
+	dbj_log_debug("Log  DEBUG");
+	dbj_log_info("Log  INFO");
+	dbj_log_warn("Log  WARN");
+	dbj_log_error("Log  ERROR");
+	dbj_log_fatal("Log  FATAL");
+	dbj_log_info(" ");
+	dbj_log_info("END Internal Test");
+	dbj_log_info(" ");
 }
 
 
@@ -547,7 +546,7 @@ static errno_t  dbj_fhandle_assure(dbj_fhandle* self)
 		DBJ_ASSERT(false);
 		return ENODEV;
 		break;
-}
+	}
 	return (errno_t)0;
 };
 
