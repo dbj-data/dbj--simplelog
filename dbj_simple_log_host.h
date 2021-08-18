@@ -157,7 +157,7 @@ extern "C" {
 		DBJ_ASSERT(EXIT_SUCCESS == rez);
 	}
 
-#ifdef __cplusplus
+#ifndef __clang__
 namespace {
 	//
 	// in no clang c++ situation 
@@ -167,8 +167,11 @@ namespace {
 	//
 	struct simple_log_protector final {
 
+		static inline bool worketh = false;
+
 		simple_log_protector() noexcept {
 			dbj_simplelog_before();
+			simple_log_protector::worketh = true;
 		}
 
 		~simple_log_protector() noexcept {
@@ -178,23 +181,19 @@ namespace {
 
 	inline const simple_log_protector simple_log_protector__;
 
-#define DBJ_SIMPLE_LOG_PROTECTOR_WORKETH
-
 } // ns
 
-#endif // !__cplusplus
+#endif // !__clang__
 
 // note for eggheads: yes I know there is a way to code constructor for MSVC
 // in C, but I deliberately do not want to use linker hacks
 // instead I use clang-cl.exe
 // if you feverishly oppose, please insert your MSVC implementation here
 #ifndef __clang__
-#ifndef DBJ_SIMPLE_LOG_PROTECTOR_WORKETH
+
 #pragma message("MSVC C code: please make sure dbj_simple_log_startup() is called before app starts!")
 #pragma message("MSVC C code: please make sure dbj_log_finalize() is called before app exit!")
-#endif
-#endif
 
-#undef DBJ_SIMPLE_LOG_PROTECTOR_WORKETH
+#endif
 
 #endif // DBJ_SIMPLE_LOG_HOST_INC
