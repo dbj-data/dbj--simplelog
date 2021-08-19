@@ -43,6 +43,12 @@
 #include <fcntl.h>
 #include <crtdbg.h>
 
+
+
+static const char* level_names[] = {
+  "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
+};
+
 #ifndef errno_t
 typedef int errno_t;
 #endif
@@ -90,9 +96,7 @@ static const char* set_log_file_name(const char new_name[BUFSIZ]) {
 	return LOCAL.log_f_name;
 }
 
-static const char* level_names[] = {
-  "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
-};
+
 
 enum { dbj_COLOR_RESET = 0, dbj_LIGHT_GRAY = 1 };
 
@@ -378,13 +382,16 @@ static bool startup_done = false;
 // make sure you call this once upon app startup
 // make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
 // you want before calling this function
-int dbj_simple_log_startup(const char* app_full_path)
+int dbj_simple_log_startup(
+	/*DBJ_LOG_SETUP*/ int dbj_simple_log_setup_, 
+	const char app_full_path[BUFSIZ]
+)
 {
 	if (startup_done) return EXIT_SUCCESS;
 	// users must give value to this
 	// before this is called
 	// ideally before simplelog is ever used
-	(void)/*extern int*/ dbj_simple_log_setup_;
+	// (void)/*extern int*/ dbj_simple_log_setup_;
 
 	if (dbj_simple_log_setup_ & DBJ_LOG_TO_FILE) {
 		if (!app_full_path) return EXIT_FAILURE;

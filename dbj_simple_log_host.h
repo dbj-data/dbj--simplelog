@@ -12,19 +12,51 @@ None of those users must not include this header
 DBJ_LOG_DEFAULT_SETUP must be defined if users do not want the default setyp
 */
 
+#include "dbj_simple_log.h"
+
+#include <crtdbg.h>
+#include <errno.h>
+#include <io.h> // is a tty
+
 #ifdef __clang__
 #pragma clang system_header
 #endif // __clang__
+#if 0
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+	// __declspec(dllimport)
+		//_Success_(return != 0)
+		//_Ret_range_(1, nSize)
+	unsigned long
+		__stdcall
+		GetModuleFileNameA(
+			void* hModule,
+			char* lpFilename,
+			unsigned long nSize
+		);
+#ifdef __cplusplus
+} // extern "C"
+#endif // __cplusplus
 
-#include "dbj_simple_log.h"
 
-#ifndef WIN32_LEAN_AND_MEAN
-// yes this is WIN only
-#define NOMINMAX
-#define STRICT 1
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif // ! WIN32_LEAN_AND_MEAN
+
+//#include <winsdkver.h>
+//
+//#ifndef WINVER
+//#define WINVER 0x0A00
+//#endif
+//
+//#ifndef _WIN32_WINNT
+//#define _WIN32_WINNT 0x0A00
+//#endif
+////
+//#ifdef __STDC_ALLOC_LIB__
+//#define __STDC_WANT_LIB_EXT2__ 1
+//#else
+//#define _POSIX_C_SOURCE 200809L
+//#endif
+
 
 #ifndef DBJ_ASSERT
 #ifdef _DEBUG
@@ -34,52 +66,24 @@ DBJ_LOG_DEFAULT_SETUP must be defined if users do not want the default setyp
 #endif
 #endif // ! DBJ_ASSERT
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
-	int dbj_simple_log_startup(const char* /*app_full_path*/);
-	/*
-	ATTENTION! log file is not explicitly closed by this lib
-	please make sure at application end, you call this, (somewhere clever as you do)
-
-	returns EXIT_SUCCESS or EXIT_FAILURE
-	*/
-	int dbj_log_finalize(void);
-
-
-	typedef enum DBJ_LOG_SETUP_ENUM {
-		/* set to Multi Threaded */
-		DBJ_LOG_MT = 1,
-		/* if app full path is given  use it to obtain log file name*/
-		DBJ_LOG_TO_FILE = 2,
-		/* do not show file line on every log line */
-		DBJ_LOG_FILELINE_SHOW = 4,
-		/* no console output, beware of no file and seting this in the same time */
-		DBJ_LOG_NO_CONSOLE = 8,
-		/* default is time  only */
-		DBJ_LOG_FULL_TIMESTAMP = 16,
-	} DBJ_LOG_SETUP_ENUM;
-
-	/////////////////////////////////////////////////////////////////////////////////////
-	/// predefined setups for both release and debug builds
-	/// 
-#undef  DBJ_LOG_DEFAULT_SETUP
-#define DBJ_LOG_DEFAULT_SETUP DBJ_LOG_TO_FILE | DBJ_LOG_MT | DBJ_LOG_NO_CONSOLE
-
-#undef  DBJ_LOG_DEFAULT_WITH_CONSOLE
-#define DBJ_LOG_DEFAULT_WITH_CONSOLE DBJ_LOG_MT 
-
-	/*
-	--------------------------------------------------------------------------------------
-	users must give a value to this before dbj simplelog is initialized
-	*/
-	extern int dbj_simple_log_setup_;
-
-	/* --------------------------------------------------------------------------------------*/
-#ifdef __cplusplus
-} // extern "C" 
-#endif // __cplusplus
+//#ifdef __cplusplus
+//extern "C" {
+//#endif // __cplusplus
+//
+//
+//
+//	/*
+//	--------------------------------------------------------------------------------------
+//	users must give a value to this before dbj simplelog is initialized
+//	*/
+//	//extern int dbj_simple_log_setup_;
+//
+//	// int dbj_simple_log_startup(DBJ_LOG_SETUP_ENUM /*dbj_simple_log_setup_*/, const char* /*app_full_path*/);
+//
+//	/* --------------------------------------------------------------------------------------*/
+//#ifdef __cplusplus
+//} // extern "C" 
+//#endif // __cplusplus
 /* --------------------------------------------------------------------------------------*/
 
 	/*
@@ -92,70 +96,39 @@ extern "C" {
 	--------------------------------------------------------------------------------------
 	*/
 
-#ifndef HMODULE
 
-#include <winsdkver.h>
-
-#ifndef WINVER
-#define WINVER 0x0A00
-#endif
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0A00
-#endif
-
-	//-------------------------------------------------------------------------------
-
-#ifdef __STDC_ALLOC_LIB__
-#define __STDC_WANT_LIB_EXT2__ 1
-#else
-#define _POSIX_C_SOURCE 200809L
-#endif
-
-#include <crtdbg.h>
-#include <errno.h>
-
-#define NOMINMAX
-#define STRICT 1
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <processenv.h>
-
-#ifdef NOMINMAX
-#undef  min
-#define min(x, y) ((x) < (y) ? (x) : (y))
-
-#undef  max
-#define max(x, y) ((x) > (y) ? (x) : (y))
-#endif // DBJ_MINIMAX
-
-#endif // ! HMODULE
 
 #ifdef __clang__
-	__attribute__((constructor))
+__attribute__((constructor))
 #endif
-		inline void dbj_simplelog_before(void)
-	{
-		char app_full_path[1024] = { 0 };
-		// Q: is __argv available for windows desktop apps?
-		// A: no it is not
-		// win32 required here
-		int rez = GetModuleFileNameA(
-			(HMODULE)NULL, app_full_path, 1024
-		);
-		DBJ_ASSERT(rez != 0);
+inline void dbj_simplelog_before(void)
+{
+	char app_full_path[1024] = { 0 };
+	// Q: is __argv available for windows desktop apps?
+	// A: no it is not
+	// win32 required here
+	int rez = GetModuleFileNameA(
+		NULL, app_full_path, 1024
+	);
+	DBJ_ASSERT(rez != 0);
 
-		rez = dbj_simple_log_startup(app_full_path);
-		DBJ_ASSERT(EXIT_SUCCESS == rez);
+	if (_isatty(0) && _isatty(1)) {
+		rez = dbj_simple_log_startup(DBJ_LOG_DEFAULT_WITH_CONSOLE, app_full_path);
 	}
+	else {
+		rez = dbj_simple_log_startup(DBJ_LOG_DEFAULT_SETUP, app_full_path);
+	}
+
+	DBJ_ASSERT(EXIT_SUCCESS == rez);
+}
 
 #ifdef __clang__
-	__attribute__((destructor))
+__attribute__((destructor))
 #endif
-		inline void dbj_simple_log_after(void) {
-		int rez = dbj_log_finalize();
-		DBJ_ASSERT(EXIT_SUCCESS == rez);
-	}
+inline void dbj_simple_log_after(void) {
+	int rez = dbj_log_finalize();
+	DBJ_ASSERT(EXIT_SUCCESS == rez);
+}
 
 #ifndef __clang__
 namespace {
@@ -195,5 +168,7 @@ namespace {
 #pragma message("MSVC C code: please make sure dbj_log_finalize() is called before app exit!")
 
 #endif
+
+#endif // 0
 
 #endif // DBJ_SIMPLE_LOG_HOST_INC
