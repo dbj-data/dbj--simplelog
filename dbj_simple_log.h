@@ -73,13 +73,19 @@ extern "C" {
 		const char /*app_full_path*/[BUFSIZ]
 	);
 
-	/*
-ATTENTION! log file is not explicitly closed by this lib
-please make sure at application end, you call this, (somewhere clever as you do)
-
-returns EXIT_SUCCESS or EXIT_FAILURE
-*/
-	int dbj_log_finalize(void);
+	// using clang this is called from destructor function
+	// conditionaly defined on the bottom of this file
+	// 
+	// if pure MSVC is used, this function is published 
+	// and it is called from a guardian destructor 
+	// when cpp app exists
+	// 
+	// if one used MSVC C the one is responsible to call
+	// this function. Somehow.
+	// 
+#ifndef __clang__
+	int dbj_simplelog_finalize(void);
+#endif
 	// can be used from other parts,
 	// not just an host app
 	void dbj_simple_log_test(const char*);
@@ -87,8 +93,9 @@ returns EXIT_SUCCESS or EXIT_FAILURE
 	/*	for users */
 	const char* const current_log_file_path();
 
-	/* for users to be able to flush and close in their finalizers */
-	FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_);
+// deprecated
+// 	log file handling is completely hidden from users
+// FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_);
 
 	typedef enum DBJ_LOG_LEVEL_ENUM {
 		DBJ_LOG_TRACE, 

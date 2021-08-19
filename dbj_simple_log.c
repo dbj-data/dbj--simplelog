@@ -28,7 +28,7 @@
 #endif
 
 #include "dbj_fhandle.h"
-#include "dbj_simple_log_host.h"
+#include "dbj_simple_log.h"
 
  // pch.h is implicitly included
  // and this is in there
@@ -39,11 +39,10 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
-#include <io.h>
 #include <fcntl.h>
 #include <crtdbg.h>
-
-
+#include <errno.h>
+#include <io.h> // is a tty
 
 static const char* level_names[] = {
   "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
@@ -444,11 +443,19 @@ void dbj_simple_log_test(const char* dummy_)
 	dbj_log_info(" ");
 }
 
-
-
+// using clang this is called from destructor function
+// conditionaly defined on the bottom of this file
+// 
+// if pure MSVC is used, this function is published 
+// and it is called from a guardian destructor 
+// when cpp app exists
+// 
+// if one used MSVC C the one is responsible to call
+// this function. Somehow.
+//  
 // this might assert on debug builds
 // make sure it does not, on release builds
-int dbj_log_finalize(void)
+int dbj_simplelog_finalize(void)
 {
 	// make sure setup was called 
 	dbj_fhandle* fh = LOCAL.user_data;
@@ -586,6 +593,56 @@ static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 	DBJ_FERROR(fp_);
 	return fp_;
 }
+
+////////////////////////////////////////////////////////////////////////////////////
+#ifdef __clang__
+__attribute__((destructor))
+inline void dbj_simple_log_destructor (void) {
+	int rez = dbj_simplelog_finalize();
+	_ASSERTE(EXIT_SUCCESS == rez);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// WARNING: not used and not tested yet
+#if DBJ_SIMPLELOG_CLANG_CONSTRUCTOR 
+
+	// __declspec(dllimport)
+		//_Success_(return != 0)
+		//_Ret_range_(1, nSize)
+	unsigned long
+		__stdcall
+		GetModuleFileNameA(
+			void* hModule,
+			char* lpFilename,
+			unsigned long nSize
+		);
+
+
+__attribute__((constructor))
+inline void dbj_simplelog_before(void)
+{
+	char app_full_path[1024] = { 0 };
+	// Q: is __argv available for windows desktop apps?
+	// A: no it is not
+	// win32 required here
+	int rez = GetModuleFileNameA(
+		NULL, app_full_path, 1024
+	);
+	DBJ_ASSERT(rez != 0);
+
+	if (_isatty(0) && _isatty(1)) {
+		rez = dbj_simple_log_startup(DBJ_LOG_DEFAULT_WITH_CONSOLE, app_full_path);
+	}
+	else {
+		rez = dbj_simple_log_startup(DBJ_LOG_DEFAULT_SETUP, app_full_path);
+	}
+
+	DBJ_ASSERT(EXIT_SUCCESS == rez);
+}
+#endif // DBJ_SIMPLELOG_CLANG_CONSTRUCTOR
+
+#endif // __clang__
 
 
 
