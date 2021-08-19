@@ -122,12 +122,14 @@ inline void dbj_simplelog_before(void)
 	DBJ_ASSERT(EXIT_SUCCESS == rez);
 }
 
+#endif // 0
+
 #ifdef __clang__
 __attribute__((destructor))
 #endif
 inline void dbj_simple_log_after(void) {
 	int rez = dbj_log_finalize();
-	DBJ_ASSERT(EXIT_SUCCESS == rez);
+	_ASSERTE(EXIT_SUCCESS == rez);
 }
 
 #ifndef __clang__
@@ -140,12 +142,20 @@ namespace {
 	//
 	struct simple_log_protector final {
 
-		static inline bool worketh = false;
+		//static inline bool worketh = false;
 
-		simple_log_protector() noexcept {
-			dbj_simplelog_before();
-			simple_log_protector::worketh = true;
-		}
+		//simple_log_protector() noexcept {
+		//	dbj_simplelog_before();
+		//	simple_log_protector::worketh = true;
+		//}
+
+		simple_log_protector() = default;
+
+		simple_log_protector(simple_log_protector const&) = delete;
+		simple_log_protector & operator = simple_log_protector(simple_log_protector const &) = delete;
+
+		simple_log_protector(simple_log_protector &&) = delete;
+		simple_log_protector& operator = simple_log_protector(simple_log_protector &&) = delete;
 
 		~simple_log_protector() noexcept {
 			dbj_simple_log_after();
@@ -158,6 +168,7 @@ namespace {
 
 #endif // !__clang__
 
+#if 0
 // note for eggheads: yes I know there is a way to code constructor for MSVC
 // in C, but I deliberately do not want to use linker hacks
 // instead I use clang-cl.exe
