@@ -11,8 +11,16 @@
 /// 	and we will not stop you :)
 /// 
 #ifdef __clang__
-#pragma clang system_header
+#pragma GCC system_header
 #endif // __clang__
+
+#ifdef __clang__
+#define DBJ_SIMPLELOG_CLANG_CONSTRUCTOR
+#else 
+#undef DBJ_SIMPLELOG_CLANG_CONSTRUCTOR
+#pragma message("This is not clang compiler, make sure you have called dbj_simple_log_startup() on app begin, and dbj_simplelog_finalize() on app exit.")
+#endif // no clang
+
 
 #ifdef __STDC_ALLOC_LIB__
 #define __STDC_WANT_LIB_EXT2__ 1
@@ -65,6 +73,7 @@ extern "C" {
 #undef  DBJ_LOG_DEFAULT_WITH_CONSOLE
 #define DBJ_LOG_DEFAULT_WITH_CONSOLE ( DBJ_LOG_MT )
 
+#ifndef __clang__
 	// make sure you call this once upon app startup
 // make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
 // you want before calling this function
@@ -83,7 +92,7 @@ extern "C" {
 	// if one used MSVC C the one is responsible to call
 	// this function. Somehow.
 	// 
-#ifndef __clang__
+
 	int dbj_simplelog_finalize(void);
 #endif
 	// can be used from other parts,
@@ -93,16 +102,16 @@ extern "C" {
 	/*	for users */
 	const char* const current_log_file_path();
 
-// deprecated
-// 	log file handling is completely hidden from users
-// FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_);
+	// deprecated
+	// 	log file handling is completely hidden from users
+	// FILE* dbj_fhandle_log_file_ptr(FILE* next_fp_);
 
 	typedef enum DBJ_LOG_LEVEL_ENUM {
-		DBJ_LOG_TRACE, 
-		DBJ_LOG_DEBUG, 
-		DBJ_LOG_INFO, 
-		DBJ_LOG_WARN, 
-		DBJ_LOG_ERROR, 
+		DBJ_LOG_TRACE,
+		DBJ_LOG_DEBUG,
+		DBJ_LOG_INFO,
+		DBJ_LOG_WARN,
+		DBJ_LOG_ERROR,
 		DBJ_LOG_FATAL
 	} DBJ_LOG_LEVEL;
 

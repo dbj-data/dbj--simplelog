@@ -595,19 +595,18 @@ static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
-#ifdef __clang__
+#ifdef DBJ_SIMPLELOG_CLANG_CONSTRUCTOR 
+
 __attribute__((destructor))
-inline void dbj_simple_log_destructor (void) {
+static void dbj_simple_log_destructor (void) {
+	default_protector_function(true);
 	int rez = dbj_simplelog_finalize();
 	_ASSERTE(EXIT_SUCCESS == rez);
+	default_protector_function(false);
 }
 
-
-////////////////////////////////////////////////////////////////////////////////////
-// WARNING: not used and not tested yet
-#if DBJ_SIMPLELOG_CLANG_CONSTRUCTOR 
-
-	// __declspec(dllimport)
+#ifndef GetModuleFileName
+	__declspec(dllimport)
 		//_Success_(return != 0)
 		//_Ret_range_(1, nSize)
 	unsigned long
@@ -617,11 +616,13 @@ inline void dbj_simple_log_destructor (void) {
 			char* lpFilename,
 			unsigned long nSize
 		);
-
+#endif // GetModuleFileName
 
 __attribute__((constructor))
-inline void dbj_simplelog_before(void)
+static void dbj_simplelog_before(void)
 {
+	default_protector_function(true);
+
 	char app_full_path[1024] = { 0 };
 	// Q: is __argv available for windows desktop apps?
 	// A: no it is not
@@ -631,7 +632,10 @@ inline void dbj_simplelog_before(void)
 	);
 	DBJ_ASSERT(rez != 0);
 
-	if (_isatty(0) && _isatty(1)) {
+	 volatile const int is_stdout = _isatty(_fileno(stdout));
+	 volatile const int is_stderr = _isatty(_fileno(stderr));
+
+	if (is_stdout > 0) {
 		rez = dbj_simple_log_startup(DBJ_LOG_DEFAULT_WITH_CONSOLE, app_full_path);
 	}
 	else {
@@ -639,10 +643,10 @@ inline void dbj_simplelog_before(void)
 	}
 
 	DBJ_ASSERT(EXIT_SUCCESS == rez);
+
+	default_protector_function(false);
 }
 #endif // DBJ_SIMPLELOG_CLANG_CONSTRUCTOR
-
-#endif // __clang__
 
 
 
