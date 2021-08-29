@@ -63,7 +63,7 @@ typedef void (*log_lock_function_ptr)(bool /*lock*/);
 // user_data is unused 
 void  default_protector_function(bool /*lock*/);
 
-static struct {
+static struct LOCAL_ {
 	void* user_data;
 	log_lock_function_ptr lock;
 	FILE* fp;
@@ -258,6 +258,10 @@ void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, 
 
 static bool enable_vt_mode()
 {
+	// this works actually
+	system(" ");
+	return true ;
+	#if 0
 	// Set output mode to handle virtual terminal sequences
 	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (hOut == INVALID_HANDLE_VALUE)
@@ -290,6 +294,7 @@ static bool enable_vt_mode()
 		return false;
 	}
 	return true;
+	#endif // 0
 }
 
 ////////////////////////////////////////////////////////////////////////////////
