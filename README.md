@@ -2,6 +2,8 @@
 
 **simple, resilient, fast, local log**
 
+NOTE: this is not syslog client implementation. For that please visit [DBJSYSLOGLIB&trade;](https://github.com/dbj-data/dbjsysloglib)
+
 > (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ 
 
 - [1. Why logging?](#1-why-logging)
