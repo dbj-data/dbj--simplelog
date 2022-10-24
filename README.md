@@ -8,12 +8,12 @@ NOTE: this is not syslog client implementation. For that please visit [DBJSYSLOG
 
 - [1. Why logging?](#1-why-logging)
 - [2. How to use](#2-how-to-use)
-  - [2.1. Setup](#21-setup)
+	- [2.1. Setup](#21-setup)
 - [3. BIG FAT WARNINGS](#3-big-fat-warnings)
-  - [3.1. Do not enter escape codes `\n \v \f \t \r \b`](#31-do-not-enter-escape-codes-n-v-f-t-r-b)
-  - [3.2. dbj simple log is not wchar_t compatible](#32-dbj-simple-log-is-not-wchar_t-compatible)
-  - [3.3. Alert, I have a name clash?!](#33-alert-i-have-a-name-clash)
-  - [3.4. Autoflush](#34-autoflush)
+	- [3.1. Do not enter escape codes `\n \v \f \t \r \b`](#31-do-not-enter-escape-codes-n-v-f-t-r-b)
+	- [3.2. WCHAR](#32-wchar)
+	- [3.3. Alert, I have a name clash?!](#33-alert-i-have-a-name-clash)
+	- [3.4. Autoflush](#34-autoflush)
 - [4. Building the thing](#4-building-the-thing)
 
 ## 1. Why logging?
@@ -30,15 +30,19 @@ Also in here there is a "resilience in presence of multiple threads ", built in.
 
 ## 2. How to use
 
-In your code you wish to use `dbj--simplelog`, include `dbj_simple_log.h`. And use these macros:
+In your code in which you wish to use `dbj--simplelog`, include `dbj_simple_log.h`. And use these macros:
 
 ```cpp
-LOG_TRACE(...) ;
-LOG_DEBUG(...) ;
-LOG_INFO(...)  ;
-LOG_WARN(...)  ;
-LOG_ERROR(...) ;
-LOG_FATAL(...) ;
+#include <dbj_simple_log.h>
+
+int main (void) {
+LOG_TRACE("TRACE") ;
+LOG_DEBUG("DEBUG") ;
+LOG_INFO("INFO")  ;
+LOG_WARN("WARN")  ;
+LOG_ERROR("ERROR") ;
+LOG_FATAL("DATAL") ;
+}
 ```
 
 Usage syntax is exactly the same as for the `printf` family, format string and the rest.
@@ -81,7 +85,7 @@ int my_setup = DBJ_LOG_TO_FILE | DBJ_LOG_NO_CONSOLE ;
 
 Ditto. In your code in your app, in one and one place only, include `dbj_simple_log_host.h`. In there is a little startup machinery working for you.
 
-Yyou must define one global variable with a desired setup mix. 
+You must define one global variable with a desired setup mix. 
 
 ```cpp
 // dbj_simple_log_host.h
@@ -128,7 +132,9 @@ DBJ_INFO("One\nTwo\rThree");
 DBJ_INFO("One Two Three");
 ```
 
-### 3.2. dbj simple log is not wchar_t compatible
+### 3.2. WCHAR 
+
+**dbj simple log is not wchar_t compatible**
 
 That is not a problem. How? Because Microsoft extension to `printf` family formatting chars has `%S`. That translates strings to/from wide/narrow chars. Example:
 
@@ -136,18 +142,15 @@ That is not a problem. How? Because Microsoft extension to `printf` family forma
 // some HRESULT indicating error
 _com_error  comerr(hr_);
 // comerr method ErrorMessage() returns wchar_t *
-// It is very simple to log it as a narrow string
+// It is very simple to log it 
 // use '%S' not '%s'
 dbj_log_fatal("IMMEDIATE EXIT !! '%S'", comerr.ErrorMessage());
 ```
 ### 3.3. Alert, I have a name clash?!
 
-And we are not surprised. But don't fret. Macros in the "front" are defined like so:
+And we are not surprised. But don't fret. Default macros in the "front" are defined like so:
 
 ```cpp
-// and these macros in the front
-// which are much more senisitive to name clash
-// unles you do not use your set
 #ifndef DBJ_USER_DEFINED_MACRO_NAMES
 	#define LOG_TRACE dbj_log_trace
 	#define LOG_DEBUG dbj_log_debug
@@ -155,9 +158,25 @@ And we are not surprised. But don't fret. Macros in the "front" are defined like
 	#define LOG_WARN dbj_log_warn
 	#define LOG_ERROR dbj_log_error
 	#define LOG_FATAL dbj_log_fatal
-#endif // DBJ_USER_DEFINED_MACRO_NAMES
+#endif // DBJ_USER_DEFINED_MACRO_NAMES 
 ```
-Obviously you can define `DBJ_USER_DEFINED_MACRO_NAMES` and provide your own macro names. Hopefully that's all you need to know to solve the name clash if it happens to your project.
+Obviously you can define `DBJ_USER_DEFINED_MACRO_NAMES` and provide your own macro names. 
+```cpp
+#define DBJ_USER_DEFINED_MACRO_NAMES
+#ifdef DBJ_USER_DEFINED_MACRO_NAMES
+    // this is just an example
+	#define MY_LOG_TRACE dbj_log_trace
+	#define MY_LOG_DEBUG dbj_log_debug
+	#define MY_LOG_INFO dbj_log_info
+	#define MY_LOG_WARN dbj_log_warn
+	#define MY_LOG_ERROR dbj_log_error
+	#define MY_LOG_FATAL dbj_log_fatal
+#else  // my names
+
+// now include dbj simple log
+#include <dbj_simple_log.h>
+```
+Hopefully that's all you need to know to solve the name clash; if it happens.
 
 ### 3.4. Autoflush
 
@@ -165,11 +184,11 @@ Currently inside `dbj_simple_log.h` there is
 ```cpp
 #define DBJ_SIMPLE_LOG_AUTO_FLUSH
 ```
-Thus we have flush after each write. Safe and slow(er). If really keen you can build your own fork without this defined.
+Thus we have flush after each write. Safe and slow(er). If really keen you can build your own fork without this defined. Remember you can have MT version of dbj simple log. Where logging will not slow you down.
 
 ## 4. Building the thing
 
-This is to be built with CL.exe, which in reality means C99, but somewhat undocumented. We also use clang-cl as delivered with Visual Studio 2019.
+If this has to be built with CL.exe, in reality thet C99, but somewhat undocumented. We rather use `clang[-cl]` as delivered with Visual Studio.
 
 The rest is history ...
 
