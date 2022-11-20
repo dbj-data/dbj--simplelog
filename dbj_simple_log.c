@@ -27,7 +27,7 @@
 #define _POSIX_C_SOURCE 200809L
 #endif
 
-#include "dbj_fhandle.h"
+//#include "dbj_fhandle.h"
 #include "dbj_simple_log.h"
 
  // pch.h is implicitly included
@@ -84,18 +84,12 @@ static struct LOCAL_ {
 	.full_time_stamp = false,
 	 .log_f_name = {'\0'} };
 
-const char* const current_log_file_path() {
-	return LOCAL.log_f_name;
-}
-
 static const char* set_log_file_name(const char new_name[BUFSIZ]) {
 
 	errno_t rez = strncpy_s(LOCAL.log_f_name, BUFSIZ, new_name, BUFSIZ - 1);
 	DBJ_ASSERT(rez == 0);
 	return LOCAL.log_f_name;
 }
-
-
 
 enum { dbj_COLOR_RESET = 0, dbj_LIGHT_GRAY = 1 };
 
@@ -178,6 +172,11 @@ static void time_stamp_(char(*buf)[32], bool short_)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// public funs
+const char* const dbj_simplelog_file_path() {
+	return LOCAL.log_f_name;
+}
+
 /// here the logging is actually done
 void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, ...)
 {
@@ -256,7 +255,7 @@ void dbj_simple_log_log(int level, const char* file, int line, const char* fmt, 
 #include <Windows.h>
 #endif
 
-static bool enable_vt_mode()
+static inline bool enable_vt_mode()
 {
 	// this works actually
 	system(" ");
@@ -350,9 +349,6 @@ static bool dbj_log_setup
 	if (!file_log_)
 		// app_full_path ignored here
 	{
-#ifdef DBJ_LOG_USE_COLOR
-		enable_vt_mode();
-#endif
 		return true;
 	}
 
@@ -380,47 +376,6 @@ static bool dbj_log_setup
 } // dbj_log_setup
 
 #undef DBJ_LOG_IS_BIT
-
-static bool startup_done = false;
-
-// make sure you call this once upon app startup
-// make sure DBJ_LOG_DEFAULT_SETUP is set to combinaion 
-// you want before calling this function
-int dbj_simple_log_startup(
-	/*DBJ_LOG_SETUP*/ int dbj_simple_log_setup_, 
-	const char app_full_path[BUFSIZ]
-)
-{
-	if (startup_done) return EXIT_SUCCESS;
-	// users must give value to this
-	// before this is called
-	// ideally before simplelog is ever used
-	// (void)/*extern int*/ dbj_simple_log_setup_;
-
-	if (dbj_simple_log_setup_ & DBJ_LOG_TO_FILE) {
-		if (!app_full_path) return EXIT_FAILURE;
-	}
-
-	if (!dbj_log_setup(dbj_simple_log_setup_, app_full_path))
-		return EXIT_FAILURE;
-
-	// this will thus go into which ever log target you have set
-	// log file or console or both or none
-
-	char full_tstamp_[32] = { 0 };
-	time_stamp_(&full_tstamp_, false);
-
-	dbj_log_info(" %s", "                                                              ");
-	dbj_log_info(" %s", "--------------------------------------------------------------");
-	dbj_log_info(" Start time: %s", full_tstamp_);
-	dbj_log_info(" %s", "                                                              ");
-	if (dbj_simple_log_setup_ & DBJ_LOG_TO_FILE)
-		dbj_log_info(" Log file: %s", current_log_file_path());
-	dbj_log_info(" %s", "                                                              ");
-
-	startup_done = true;
-	return EXIT_SUCCESS;
-}
 
 /* public API too */
 void dbj_simple_log_test(const char* dummy_)
@@ -451,16 +406,9 @@ void dbj_simple_log_test(const char* dummy_)
 // using clang this is called from destructor function
 // conditionaly defined on the bottom of this file
 // 
-// if pure MSVC is used, this function is published 
-// and it is called from a guardian destructor 
-// when cpp app exists
-// 
-// if one used MSVC C the one is responsible to call
-// this function. Somehow.
-//  
 // this might assert on debug builds
 // make sure it does not, on release builds
-int dbj_simplelog_finalize(void)
+static int dbj_simplelog_finalize(void)
 {
 	// make sure setup was called 
 	dbj_fhandle* fh = LOCAL.user_data;
@@ -480,127 +428,6 @@ int dbj_simplelog_finalize(void)
 	}
 	return EXIT_FAILURE;
 }
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// DBJ FHANDLE IMPLEMENTATION
-//
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-/* (c) 2019-2020 by dbj.org   -- LICENSE DBJ -- https://dbj.org/license_dbj/ */
-
-#ifdef __STDC_ALLOC_LIB__
-#define __STDC_WANT_LIB_EXT2__ 1
-#else
-#define _POSIX_C_SOURCE 200809L
-#endif
-// _fstat
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#define dbj_fhandle_bad_descriptor -1 
-
-static dbj_fhandle dbj_fhandle_make(const char* name_)
-{
-	dbj_fhandle fh = { {'\0'}, dbj_fhandle_bad_descriptor };
-	int rez = _snprintf_s(fh.name, dbj_fhandle_max_name_len, _TRUNCATE, "%s.%s", name_, DBJ_FHANDLE_SUFFIX);
-	DBJ_ASSERT(rez > 0);
-	return fh;
-}
-
-/*
-assure file descriptor given file name
-on error returns one of errno values
-
-Condition -- Message
-EACCES	The given path is a directory, or the file is read-only, but an open-for-writing operation was attempted.
-EEXIST	_O_CREAT and _O_EXCL flags were specified, but filename already exists.
-EINVAL	Invalid oflag, shflag, or pmode argument, or pfh or filename was a null pointer.
-EMFILE	No more file descriptors available.
-ENOENT	File or path not found.
-ENODEV	No such device
-*/
-static errno_t  dbj_fhandle_assure(dbj_fhandle* self)
-{
-	DBJ_ASSERT(self);
-	DBJ_ASSERT(self->name);
-
-	// int fd = self->file_descriptor;
-
-	errno_t rez = _sopen_s(&self->file_descriptor, self->name,
-		_O_TRUNC | O_CREAT | _O_WRONLY,
-		/* sharing settings    */
-		_SH_DENYNO,
-		/* permission settings */
-		_S_IWRITE);
-
-	if (rez != 0) {
-		DBJ_PERROR;
-		self->file_descriptor = dbj_fhandle_bad_descriptor;
-		return rez;
-	}
-
-	struct _stat64i32 sb;
-
-	rez = _fstat(self->file_descriptor, &sb);
-	if (rez != 0) {
-		DBJ_PERROR;
-		self->file_descriptor = dbj_fhandle_bad_descriptor;
-		return rez;
-	}
-
-	switch (sb.st_mode & S_IFMT) {
-	case S_IFCHR:  //character device
-#ifndef _MSC_VER
-	case S_IFIFO:  //FIFO/pipe
-	case S_IFLNK:  //symlink
-#endif // !_MSC_VER
-	case S_IFREG:  //regular file
-		break;
-	default:
-		DBJ_ASSERT(false);
-		return ENODEV;
-		break;
-	}
-	return (errno_t)0;
-};
-
-/*
-ATTENTION! dbj_fhandle_assure must be called before this to assure the file handle from name given
-ATTENTION! file_handle.file_ptr() returns FILE * which is not explicitly closed by this lib
-because this is a log file ...
-it is left to the OS to take care of ... Stupid or clever? I am not sure...
-
-NOTE: After _fdopen, close by using fclose, not _close.
-if (fp_) { ::fclose( fp_) ; fp_ = nullptr; }
-*/
-
-static FILE* dbj_fhandle_file_ptr(dbj_fhandle* self /* const char* options_ */)
-{
-	// https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fdopen-wfdopen?view=vs-2019
-	// "c" is important
-	// c --	Enable the commit flag for the associated filename so that the contents of the file
-	//  buffer are written directly to disk if either fflush or _flushall is called.
-	static const char* default_open_mode = "wc";
-
-	const char* options_ = default_open_mode;
-	DBJ_ASSERT(options_);
-	DBJ_ASSERT(self->file_descriptor > dbj_fhandle_bad_descriptor);
-	// Associates a stream with a file that was previously opened for low-level I/O.
-	FILE* fp_ = dbj_fhandle_log_file_ptr(
-		_fdopen(self->file_descriptor, options_)
-	);
-	DBJ_ASSERT(fp_ != NULL);
-	DBJ_FERROR(fp_);
-	return fp_;
-}
-
-////////////////////////////////////////////////////////////////////////////////////
-#ifdef DBJ_SIMPLELOG_CLANG_CONSTRUCTOR 
 
 __attribute__((destructor))
 static void dbj_simple_log_destructor (void) {
@@ -623,10 +450,55 @@ static void dbj_simple_log_destructor (void) {
 		);
 #endif // GetModuleFileName
 
+static bool startup_done = false;
+
+// make sure you call this once upon app startup
+int dbj_simple_log_startup(
+	/*DBJ_LOG_SETUP*/ int dbj_simple_log_setup_, 
+	const char app_full_path[BUFSIZ]
+)
+{
+	if (startup_done) return EXIT_SUCCESS;
+	// users must give value to this
+	// before this is called
+	// ideally before simplelog is ever used
+	// (void)/*extern int*/ dbj_simple_log_setup_;
+
+	if (dbj_simple_log_setup_ & DBJ_LOG_TO_FILE) {
+		if (!app_full_path) return EXIT_FAILURE;
+	}
+
+	if (!dbj_log_setup(dbj_simple_log_setup_, app_full_path))
+		return EXIT_FAILURE;
+
+	// this will thus go into which ever log target you have set
+	// log file or console or both or none
+
+	char full_tstamp_[32] = { 0 };
+	time_stamp_(&full_tstamp_, false);
+
+	dbj_log_info(" %s", "                                                              ");
+	dbj_log_info(" %s", "--------------------------------------------------------------");
+	dbj_log_info(" Start time: %s", full_tstamp_);
+	dbj_log_info(" %s", "                                                              ");
+	if (dbj_simple_log_setup_ & DBJ_LOG_TO_FILE)
+		dbj_log_info(" Log file: %s", dbj_simplelog_file_path());
+	dbj_log_info(" %s", "                                                              ");
+
+	startup_done = true;
+	return EXIT_SUCCESS;
+}
+
+
 __attribute__((constructor))
 static void dbj_simplelog_before(void)
 {
 	default_protector_function(true);
+    
+	// colour console output 
+	// regardless of if console output is required
+	// or not
+	enable_vt_mode();
 
 	char app_full_path[1024] = { 0 };
 	// Q: is __argv available for windows desktop apps?
@@ -637,21 +509,37 @@ static void dbj_simplelog_before(void)
 	);
 	DBJ_ASSERT(rez != 0);
 
-	 volatile const int is_stdout = _isatty(_fileno(stdout));
-	 volatile const int is_stderr = _isatty(_fileno(stderr));
+	{
+		if (startup_done) goto DONE; 
 
-	if (is_stdout > 0) {
-		rez = dbj_simple_log_startup(DBJ_LOG_DEFAULT_WITH_CONSOLE, app_full_path);
+		if (DBJ_LOG_DEFAULT_SETUP & DBJ_LOG_TO_FILE) {
+			DBJ_ASSERT(app_full_path[0] != 0);
+		}
+
+		rez = dbj_log_setup(DBJ_LOG_DEFAULT_SETUP, app_full_path);
+			DBJ_ASSERT(rez != 0);
+
+		// this will thus go into which ever log target you have set
+		// log file or console or both or none
+
+		char full_tstamp_[32] = { 0 };
+		time_stamp_(&full_tstamp_, false);
+
+		dbj_log_info(" %s", "                                                              ");
+		dbj_log_info(" %s", "--------------------------------------------------------------");
+		dbj_log_info(" Start time: %s", full_tstamp_);
+		dbj_log_info(" %s", "                                                              ");
+		if (DBJ_LOG_DEFAULT_SETUP & DBJ_LOG_TO_FILE)
+			dbj_log_info(" Log file: %s", dbj_simplelog_file_path());
+		dbj_log_info(" %s", "                                                              ");
+
+		startup_done = true;
 	}
-	else {
-		rez = dbj_simple_log_startup(DBJ_LOG_DEFAULT_SETUP, app_full_path);
-	}
 
-	DBJ_ASSERT(EXIT_SUCCESS == rez);
-
+DONE:
 	default_protector_function(false);
 }
-#endif // DBJ_SIMPLELOG_CLANG_CONSTRUCTOR
+
 
 
 
