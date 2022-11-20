@@ -5,6 +5,11 @@ and shows how is dbj_simple_log to be used
 
 #define DBJ_SIMPLELOG_IMPLEMENTATION
 #include "dbj_simple_log.h"
+
+// we override the default setup here
+#undef  DBJ_LOG_DEFAULT_SETUP
+#define DBJ_LOG_DEFAULT_SETUP ( DBJ_LOG_TO_FILE | DBJ_LOG_MT | DBJ_LOG_FILELINE_SHOW | DBJ_LOG_FULL_TIMESTAMP )
+
 #include "dbj_simple_log.c"
 
 /*
