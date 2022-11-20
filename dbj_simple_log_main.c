@@ -29,9 +29,6 @@ int main(const int argc, char* argv[])
 {
 	__try {
 		__try {
-			
-			printf(" dbj_simplelog_file_path: %s" , dbj_simplelog_file_path());
-
 			dbj_simple_log_test(0);
 		}
 		__finally
