@@ -69,33 +69,33 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>Default</CompileAs>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>Default</CompileAs>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>Default</CompileAs>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>Default</CompileAs>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dbj_simple_log_main.c" />
+    <ClCompile Include="dbj_simple_log_main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

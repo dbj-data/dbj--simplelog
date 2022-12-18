@@ -21,14 +21,16 @@
  * IN THE SOFTWARE.
  */
 
-#ifdef __STDC_ALLOC_LIB__
-#define __STDC_WANT_LIB_EXT2__ 1
-#else
-#define _POSIX_C_SOURCE 200809L
-#endif
+//#ifdef __STDC_ALLOC_LIB__
+//#define __STDC_WANT_LIB_EXT2__ 1
+//#else
+//#define _POSIX_C_SOURCE 200809L
+//#endif
 
+#ifndef _DBJ_SIMPLE_LOG_H_INCLUDED_
 //#include "dbj_fhandle.h"
 #include "dbj_simple_log.h"
+#endif 
 
  // pch.h is implicitly included
  // and this is in there
@@ -411,7 +413,7 @@ void dbj_simple_log_test(const char* dummy_)
 static int dbj_simplelog_finalize(void)
 {
 	// make sure setup was called 
-	dbj_fhandle* fh = LOCAL.user_data;
+	dbj_fhandle* fh = (dbj_fhandle*)LOCAL.user_data;
 
 	// log file was not made
 	// the session was in a console mode
